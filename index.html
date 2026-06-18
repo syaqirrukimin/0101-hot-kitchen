@@ -1,0 +1,1054 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="0101 Hot Kitchen">
+<meta name="theme-color" content="#1A0A00">
+<title>0101 Hot Kitchen</title>
+<link rel="manifest" href="manifest.json">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+
+<!-- ═══════════════════════════════════════════════
+     SUPABASE CONFIG — REPLACE THESE TWO VALUES
+     After you create your Supabase project (see tutorial)
+     paste your Project URL and anon key below.
+     ═══════════════════════════════════════════════ -->
+<script>
+  const SUPABASE_URL = 'YOUR_SUPABASE_URL';      // e.g. https://abcxyz.supabase.co
+  const SUPABASE_KEY = 'YOUR_SUPABASE_ANON_KEY'; // long key starting with eyJ...
+</script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+<style>
+/* ─── RESET & ROOT ─────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --night:   #1A0A00;
+  --dark:    #2C1810;
+  --ember:   #854F0B;
+  --gold:    #BA7517;
+  --flame:   #EF9F27;
+  --cream:   #FDF6EE;
+  --border:  #E8D5B0;
+  --muted:   #7A5C3A;
+  --text:    #2C1810;
+  --success-bg: #D1FAE5; --success-fg: #065F46;
+  --warn-bg:    #FEF3C7; --warn-fg:    #854F0B;
+  --info-bg:    #DBEAFE; --info-fg:    #1E40AF;
+  --danger:     #A32D2D;
+  --r8: 8px; --r12: 12px;
+}
+html, body { height: 100%; overflow: hidden; background: var(--cream); color: var(--text); font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; font-size: 14px; }
+
+/* ─── LAYOUT ────────────────────────────────────── */
+.app { display: flex; flex-direction: column; height: 100vh; max-width: 480px; margin: 0 auto; }
+.topbar { flex-shrink: 0; background: var(--night); padding: 10px 14px; display: flex; align-items: center; gap: 10px; }
+.topbar-info { flex: 1; }
+.topbar-title { font-size: 15px; font-weight: 600; color: #fff; letter-spacing: .3px; }
+.topbar-sub { font-size: 11px; color: var(--flame); }
+.topbar-sync { background: none; border: none; color: var(--flame); font-size: 18px; cursor: pointer; padding: 4px; }
+.nav { flex-shrink: 0; display: flex; background: var(--dark); }
+.nav-btn { flex: 1; padding: 8px 2px; display: flex; flex-direction: column; align-items: center; gap: 3px; font-size: 10px; border: none; background: transparent; color: rgba(255,255,255,.45); cursor: pointer; border-top: 2px solid transparent; transition: all .15s; }
+.nav-btn.active { color: var(--flame); border-top-color: var(--flame); }
+.nav-btn i { font-size: 17px; }
+.screens { flex: 1; overflow-y: auto; overflow-x: hidden; -webkit-overflow-scrolling: touch; }
+.screen { display: none; padding: 12px 12px 24px; }
+.screen.active { display: block; }
+
+/* ─── TOAST ─────────────────────────────────────── */
+.toast { position: fixed; bottom: 90px; left: 50%; transform: translateX(-50%) translateY(20px); background: var(--dark); color: #fff; padding: 9px 18px; border-radius: 20px; font-size: 13px; opacity: 0; transition: all .3s; z-index: 999; pointer-events: none; white-space: nowrap; }
+.toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+/* ─── LOADING OVERLAY ───────────────────────────── */
+.loading-overlay { position: fixed; inset: 0; background: var(--night); display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 9999; transition: opacity .4s; }
+.loading-overlay.hidden { opacity: 0; pointer-events: none; }
+.loading-logo { margin-bottom: 20px; }
+.loading-text { color: var(--flame); font-size: 13px; letter-spacing: 1px; }
+.spinner { width: 24px; height: 24px; border: 2px solid rgba(239,159,39,.3); border-top-color: var(--flame); border-radius: 50%; animation: spin .8s linear infinite; margin-top: 12px; }
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* ─── CARDS ─────────────────────────────────────── */
+.card { background: #fff; border: 0.5px solid var(--border); border-radius: var(--r12); padding: 12px 14px; margin-bottom: 10px; }
+.card-chef { border-left: 3px solid var(--gold); border-radius: 0 var(--r12) var(--r12) 0; }
+.card-chef.done { border-left-color: #639922; opacity: .65; }
+
+/* ─── TYPOGRAPHY ─────────────────────────────────── */
+h2 { font-size: 16px; font-weight: 600; color: var(--dark); margin-bottom: 12px; }
+.section-label { font-size: 11px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: .6px; margin: 12px 0 6px; }
+.order-id { font-size: 11px; color: var(--muted); font-weight: 500; }
+.order-name { font-size: 15px; font-weight: 600; color: var(--dark); }
+.order-meta { font-size: 12px; color: var(--muted); margin-top: 2px; }
+.price-row { display: flex; justify-content: space-between; font-size: 13px; color: var(--muted); padding: 2px 0; }
+.price-total { display: flex; justify-content: space-between; font-size: 15px; font-weight: 600; color: var(--gold); padding: 8px 0 2px; border-top: 0.5px solid var(--border); margin-top: 4px; }
+.timestamp { font-size: 11px; color: var(--muted); margin-top: 6px; }
+.empty-state { text-align: center; padding: 40px 20px; color: var(--muted); }
+.empty-state i { font-size: 40px; color: var(--border); display: block; margin-bottom: 10px; }
+
+/* ─── BADGES ─────────────────────────────────────── */
+.badge { display: inline-block; padding: 3px 9px; border-radius: 20px; font-size: 11px; font-weight: 600; }
+.badge-unpaid  { background: var(--warn-bg);    color: var(--warn-fg); }
+.badge-paid    { background: var(--success-bg); color: var(--success-fg); }
+.badge-partial { background: var(--info-bg);    color: var(--info-fg); }
+.badge-queue   { background: var(--warn-bg);    color: var(--warn-fg); }
+.badge-done    { background: var(--success-bg); color: var(--success-fg); }
+
+/* ─── BUTTONS ─────────────────────────────────────── */
+.btn { display: inline-flex; align-items: center; gap: 5px; padding: 9px 14px; border-radius: var(--r8); border: 1px solid var(--gold); background: transparent; color: var(--ember); cursor: pointer; font-size: 13px; font-weight: 500; transition: all .15s; }
+.btn:active { opacity: .8; }
+.btn-primary { background: var(--gold); color: #fff; border-color: var(--gold); }
+.btn-primary:active { background: var(--ember); }
+.btn-full { width: 100%; justify-content: center; margin-top: 6px; }
+.btn-sm { padding: 6px 11px; font-size: 12px; }
+.btn-danger { border-color: #E5A0A0; color: var(--danger); }
+
+/* ─── FORM ELEMENTS ──────────────────────────────── */
+label { font-size: 12px; color: var(--muted); display: block; margin-bottom: 4px; margin-top: 10px; }
+label:first-child { margin-top: 0; }
+input, select, textarea { width: 100%; padding: 9px 11px; border: 0.5px solid var(--border); border-radius: var(--r8); font-size: 13px; background: #fff; color: var(--text); -webkit-appearance: none; appearance: none; }
+input:focus, select:focus, textarea:focus { outline: none; border-color: var(--gold); box-shadow: 0 0 0 2px rgba(186,117,23,.12); }
+textarea { resize: none; height: 52px; }
+.input-row { display: flex; gap: 8px; }
+.input-row input, .input-row select { margin-bottom: 0; }
+
+/* ─── FILTERS ─────────────────────────────────────── */
+.filter-row { display: flex; gap: 6px; margin-bottom: 10px; overflow-x: auto; padding-bottom: 2px; -webkit-overflow-scrolling: touch; }
+.filter-row::-webkit-scrollbar { display: none; }
+.filter-btn { padding: 6px 13px; border: 0.5px solid var(--border); border-radius: 20px; background: #fff; cursor: pointer; font-size: 12px; color: var(--muted); white-space: nowrap; font-weight: 500; }
+.filter-btn.active { background: var(--gold); color: #fff; border-color: var(--gold); }
+
+/* ─── MENU BLOCK ─────────────────────────────────── */
+.menu-block { background: var(--cream); border: 0.5px solid var(--border); border-radius: var(--r8); padding: 11px; margin-bottom: 8px; position: relative; }
+.menu-block-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }
+.menu-block-num { font-size: 11px; font-weight: 600; color: var(--gold); }
+.remove-item-btn { background: none; border: none; cursor: pointer; color: var(--muted); font-size: 15px; padding: 2px; line-height: 1; }
+.add-item-btn { border: 1px dashed var(--gold); background: transparent; width: 100%; padding: 9px; border-radius: var(--r8); cursor: pointer; font-size: 13px; color: var(--gold); margin-bottom: 8px; display: flex; align-items: center; justify-content: center; gap: 6px; }
+
+/* ─── ADDON CHIPS ────────────────────────────────── */
+.addon-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-bottom: 4px; }
+.addon-chip { padding: 6px 8px; border: 0.5px solid var(--border); border-radius: 8px; cursor: pointer; font-size: 12px; color: var(--muted); background: #fff; user-select: none; transition: all .15s; line-height: 1.3; }
+.addon-chip.sel { border-color: var(--gold); background: var(--warn-bg); color: var(--ember); font-weight: 500; }
+
+/* ─── QTY CONTROL ────────────────────────────────── */
+.qty-row { display: flex; align-items: center; gap: 12px; }
+.qty-btn { width: 32px; height: 32px; border: 1px solid var(--gold); border-radius: 8px; background: transparent; cursor: pointer; font-size: 20px; color: var(--gold); display: flex; align-items: center; justify-content: center; flex-shrink: 0; line-height: 1; }
+.qty-val { font-size: 16px; font-weight: 600; min-width: 22px; text-align: center; color: var(--dark); }
+
+/* ─── MODALS ─────────────────────────────────────── */
+.modal-bg { display: none; position: fixed; inset: 0; background: rgba(26,10,0,.65); z-index: 200; align-items: flex-end; justify-content: center; padding: 0; }
+.modal-bg.open { display: flex; }
+.modal { background: #fff; border-radius: 20px 20px 0 0; padding: 18px 16px 32px; width: 100%; max-height: 88vh; overflow-y: auto; -webkit-overflow-scrolling: touch; }
+.modal h3 { font-size: 16px; font-weight: 600; color: var(--dark); margin-bottom: 12px; }
+.modal-handle { width: 36px; height: 4px; background: var(--border); border-radius: 2px; margin: 0 auto 14px; }
+.divider { height: 0.5px; background: var(--border); margin: 12px 0; }
+
+/* ─── PAYMENT FEEDBACK ───────────────────────────── */
+.change-box { background: var(--success-bg); border-radius: var(--r8); padding: 12px; text-align: center; margin-top: 10px; }
+.change-label { font-size: 12px; color: var(--success-fg); margin-bottom: 2px; }
+.change-val { font-size: 26px; font-weight: 700; color: var(--success-fg); }
+.balance-box { background: var(--warn-bg); border-radius: var(--r8); padding: 12px; text-align: center; margin-top: 10px; }
+.balance-label { font-size: 12px; color: var(--warn-fg); margin-bottom: 2px; }
+.balance-val { font-size: 26px; font-weight: 700; color: var(--warn-fg); }
+
+/* ─── REPORT METRICS ─────────────────────────────── */
+.metric-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 12px; }
+.metric { background: #fff; border: 0.5px solid var(--border); border-radius: 10px; padding: 11px 12px; }
+.metric-label { font-size: 11px; color: var(--muted); margin-bottom: 4px; }
+.metric-val { font-size: 22px; font-weight: 700; color: var(--dark); }
+.metric-val.gold { color: var(--gold); }
+.metric-val.ember { color: var(--ember); }
+
+/* ─── TOP ITEMS ──────────────────────────────────── */
+.top-item { display: flex; align-items: center; gap: 10px; padding: 8px 0; border-bottom: 0.5px solid var(--border); }
+.top-item:last-child { border-bottom: none; }
+.top-rank { font-size: 20px; width: 28px; text-align: center; }
+.top-bar-bg { flex: 1; }
+.top-name { font-size: 13px; font-weight: 600; color: var(--dark); }
+.top-count { font-size: 11px; color: var(--muted); }
+.top-bar { height: 4px; border-radius: 2px; background: var(--gold); margin-top: 4px; transition: width .5s ease; }
+
+/* ─── PERIOD TABS ────────────────────────────────── */
+.period-tabs { display: flex; gap: 6px; margin-bottom: 12px; }
+.period-tab { padding: 6px 16px; border: 0.5px solid var(--border); border-radius: 20px; background: #fff; cursor: pointer; font-size: 12px; color: var(--muted); font-weight: 500; }
+.period-tab.active { background: var(--gold); color: #fff; border-color: var(--gold); }
+
+/* ─── REPORT TABLE ───────────────────────────────── */
+.rtable-wrap { overflow-x: auto; margin-bottom: 12px; border-radius: var(--r8); border: 0.5px solid var(--border); }
+.rtable { width: 100%; border-collapse: collapse; font-size: 11px; min-width: 360px; }
+.rtable th { text-align: left; padding: 7px 7px; background: var(--cream); font-weight: 600; border-bottom: 0.5px solid var(--border); color: var(--ember); }
+.rtable td { padding: 6px 7px; border-bottom: 0.5px solid var(--border); vertical-align: top; color: var(--text); }
+.rtable tr:last-child td { border-bottom: none; }
+
+/* ─── SETTINGS TAGS ──────────────────────────────── */
+.tag-wrap { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; min-height: 28px; }
+.tag { background: var(--cream); border: 0.5px solid var(--border); border-radius: 20px; padding: 5px 10px; font-size: 12px; display: inline-flex; align-items: center; gap: 5px; }
+.tag-price { color: var(--gold); font-weight: 600; }
+.tag-del { background: none; border: none; cursor: pointer; color: var(--muted); font-size: 13px; padding: 0; line-height: 1; display: flex; align-items: center; }
+.tag-del:hover { color: var(--danger); }
+
+/* ─── OFFLINE BANNER ─────────────────────────────── */
+.offline-banner { background: var(--ember); color: #fff; text-align: center; font-size: 12px; padding: 6px; display: none; }
+.offline-banner.show { display: block; }
+
+/* ─── ORDER ITEM IN CARD ─────────────────────────── */
+.order-item { padding: 6px 0; border-top: 0.5px solid var(--border); }
+.order-item-name { font-weight: 500; font-size: 13px; }
+.order-item-addons { font-size: 12px; color: var(--muted); margin-top: 1px; }
+.order-item-remark { font-size: 12px; color: var(--gold); font-style: italic; margin-top: 1px; }
+
+/* ─── PAY SUMMARY BOX ────────────────────────────── */
+.pay-summary { background: var(--cream); border: 0.5px solid var(--border); border-radius: var(--r8); padding: 10px 12px; margin-bottom: 10px; }
+</style>
+</head>
+<body>
+
+<!-- LOADING OVERLAY -->
+<div class="loading-overlay" id="loading-overlay">
+  <div class="loading-logo">
+    <svg width="80" height="80" viewBox="0 0 72 72" fill="none">
+      <rect width="72" height="72" rx="14" fill="#412402"/>
+      <text x="36" y="27" text-anchor="middle" font-family="Arial,sans-serif" font-size="17" font-weight="900" fill="#EF9F27" letter-spacing="2">0101</text>
+      <line x1="16" y1="31" x2="56" y2="31" stroke="#BA7517" stroke-width="1"/>
+      <ellipse cx="36" cy="45" rx="14" ry="8" fill="none" stroke="#EF9F27" stroke-width="1.5"/>
+      <ellipse cx="36" cy="45" rx="8" ry="4" fill="#BA7517"/>
+      <path d="M30 37 Q30 29 36 26 Q42 29 42 37" fill="none" stroke="#E24B4A" stroke-width="1.5"/>
+      <path d="M33 34 Q33 28 36 26 Q39 28 39 34" fill="none" stroke="#EF9F27" stroke-width="1.5"/>
+      <text x="36" y="63" text-anchor="middle" font-family="Arial,sans-serif" font-size="6.5" font-weight="700" fill="#FAC775" letter-spacing="2">HOT KITCHEN</text>
+    </svg>
+  </div>
+  <div class="loading-text">0101 HOT KITCHEN</div>
+  <div class="spinner"></div>
+</div>
+
+<div class="toast" id="toast"></div>
+<div class="offline-banner" id="offline-banner">⚠️ You are offline — changes saved locally</div>
+
+<div class="app">
+  <!-- TOP BAR -->
+  <div class="topbar">
+    <svg width="36" height="36" viewBox="0 0 72 72" fill="none">
+      <rect width="72" height="72" rx="14" fill="#412402"/>
+      <text x="36" y="27" text-anchor="middle" font-family="Arial,sans-serif" font-size="17" font-weight="900" fill="#EF9F27" letter-spacing="2">0101</text>
+      <line x1="16" y1="31" x2="56" y2="31" stroke="#BA7517" stroke-width="1"/>
+      <ellipse cx="36" cy="45" rx="14" ry="8" fill="none" stroke="#EF9F27" stroke-width="1.5"/>
+      <ellipse cx="36" cy="45" rx="8" ry="4" fill="#BA7517"/>
+      <path d="M30 37 Q30 29 36 26 Q42 29 42 37" fill="none" stroke="#E24B4A" stroke-width="1.5"/>
+      <path d="M33 34 Q33 28 36 26 Q39 28 39 34" fill="none" stroke="#EF9F27" stroke-width="1.5"/>
+      <text x="36" y="63" text-anchor="middle" font-family="Arial,sans-serif" font-size="6.5" font-weight="700" fill="#FAC775" letter-spacing="2">HOT KITCHEN</text>
+    </svg>
+    <div class="topbar-info">
+      <div class="topbar-title">0101 Hot Kitchen</div>
+      <div class="topbar-sub" id="topbar-date"></div>
+    </div>
+    <button class="topbar-sync" onclick="syncAll()" title="Sync data"><i class="fa-solid fa-rotate"></i></button>
+  </div>
+
+  <!-- NAVIGATION -->
+  <nav class="nav">
+    <button class="nav-btn active" id="nav-orders" onclick="showScreen('orders')"><i class="fa-solid fa-clipboard-list"></i>Orders</button>
+    <button class="nav-btn" id="nav-payment" onclick="showScreen('payment')"><i class="fa-solid fa-credit-card"></i>Payment</button>
+    <button class="nav-btn" id="nav-chef" onclick="showScreen('chef')"><i class="fa-solid fa-hat-chef"></i>Chef</button>
+    <button class="nav-btn" id="nav-report" onclick="showScreen('report')"><i class="fa-solid fa-chart-bar"></i>Report</button>
+    <button class="nav-btn" id="nav-settings" onclick="showScreen('settings')"><i class="fa-solid fa-gear"></i>Settings</button>
+  </nav>
+
+  <div class="screens">
+    <!-- ── ORDERS ──────────────────────────────── -->
+    <div class="screen active" id="screen-orders">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+        <h2 style="margin:0">Orders</h2>
+        <button class="btn btn-primary btn-sm" onclick="openNewOrder()"><i class="fa-solid fa-plus"></i> New order</button>
+      </div>
+      <div class="filter-row">
+        <button class="filter-btn active" onclick="filterOrders('all',this)">All</button>
+        <button class="filter-btn" onclick="filterOrders('unpaid',this)">Unpaid</button>
+        <button class="filter-btn" onclick="filterOrders('partial',this)">Partial</button>
+        <button class="filter-btn" onclick="filterOrders('paid',this)">Paid</button>
+      </div>
+      <div id="orders-list"></div>
+    </div>
+
+    <!-- ── PAYMENT ─────────────────────────────── -->
+    <div class="screen" id="screen-payment">
+      <h2>Update payment</h2>
+      <div id="payment-list"></div>
+    </div>
+
+    <!-- ── CHEF ───────────────────────────────── -->
+    <div class="screen" id="screen-chef">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+        <h2 style="margin:0">Kitchen queue</h2>
+        <span id="chef-count" class="badge badge-queue">0 pending</span>
+      </div>
+      <p style="font-size:12px;color:var(--muted);margin-bottom:10px">Sorted by collection time ↑</p>
+      <div id="chef-list"></div>
+    </div>
+
+    <!-- ── REPORT ─────────────────────────────── -->
+    <div class="screen" id="screen-report">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+        <h2 style="margin:0">Report</h2>
+        <button class="btn btn-primary btn-sm" onclick="printReport()"><i class="fa-solid fa-print"></i> Print A4</button>
+      </div>
+      <div class="period-tabs">
+        <button class="period-tab active" onclick="setPeriod('daily',this)">Today</button>
+        <button class="period-tab" onclick="setPeriod('weekly',this)">This week</button>
+        <button class="period-tab" onclick="setPeriod('monthly',this)">This month</button>
+      </div>
+      <div id="report-content"></div>
+    </div>
+
+    <!-- ── SETTINGS ───────────────────────────── -->
+    <div class="screen" id="screen-settings">
+      <h2>Settings</h2>
+
+      <div class="card">
+        <div class="section-label" style="margin-top:0">CKT types & price (RM)</div>
+        <div class="tag-wrap" id="tag-ckt"></div>
+        <div class="input-row" style="margin-top:10px">
+          <input id="new-ckt-name" placeholder="Type name" style="flex:2">
+          <input id="new-ckt-price" placeholder="Price" type="number" min="0" step="0.50" style="flex:1">
+          <button class="btn btn-primary btn-sm" onclick="addCkt()">Add</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="section-label" style="margin-top:0">Add-ons & price (RM)</div>
+        <div class="tag-wrap" id="tag-addon"></div>
+        <div class="input-row" style="margin-top:10px">
+          <input id="new-addon-name" placeholder="Add-on name" style="flex:2">
+          <input id="new-addon-price" placeholder="Price" type="number" min="0" step="0.50" style="flex:1">
+          <button class="btn btn-primary btn-sm" onclick="addAddon()">Add</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="section-label" style="margin-top:0">Payment types</div>
+        <div class="tag-wrap" id="tag-payment"></div>
+        <div class="input-row" style="margin-top:10px">
+          <input id="new-payment" placeholder="e.g. DuitNow" style="flex:1">
+          <button class="btn btn-primary btn-sm" onclick="addSimpleTag('payment')">Add</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="section-label" style="margin-top:0">Order statuses</div>
+        <div class="tag-wrap" id="tag-status"></div>
+        <div class="input-row" style="margin-top:10px">
+          <input id="new-status" placeholder="e.g. Ready" style="flex:1">
+          <button class="btn btn-primary btn-sm" onclick="addSimpleTag('status')">Add</button>
+        </div>
+      </div>
+
+      <div class="card" style="margin-top:4px">
+        <div class="section-label" style="margin-top:0;color:var(--danger)">Danger zone</div>
+        <button class="btn btn-danger btn-full" onclick="clearTodayOrders()"><i class="fa-solid fa-trash"></i> Clear today's orders</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ NEW ORDER MODAL ══════════════════════════════ -->
+<div class="modal-bg" id="modal-order">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <h3 id="modal-title">New order</h3>
+    <label>Customer name</label>
+    <input id="o-name" placeholder="e.g. Ali" autocomplete="off">
+    <label>Collection time</label>
+    <input id="o-time" type="time">
+    <label>Discount (RM) — optional</label>
+    <input id="o-discount" type="number" min="0" step="0.50" placeholder="0.00">
+    <div class="divider"></div>
+    <div class="section-label" style="margin-top:0">Menu items</div>
+    <div id="menu-items-container"></div>
+    <button class="add-item-btn" onclick="addMenuItem()"><i class="fa-solid fa-plus"></i> Add another item</button>
+    <div id="order-price-preview" style="margin-bottom:10px"></div>
+    <div style="display:flex;gap:8px">
+      <button class="btn btn-full" style="flex:1" onclick="closeModal('modal-order')">Cancel</button>
+      <button class="btn btn-primary btn-full" style="flex:2" onclick="saveOrder()"><i class="fa-solid fa-check"></i> Save order</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ PAYMENT MODAL ════════════════════════════════ -->
+<div class="modal-bg" id="modal-payment">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <h3 id="pay-modal-title">Update payment</h3>
+    <div class="pay-summary" id="pay-order-summary"></div>
+    <label>Payment status</label>
+    <select id="pay-status" onchange="updatePayUI()">
+      <option value="unpaid">Unpaid</option>
+      <option value="partial">Partial payment</option>
+      <option value="paid">Paid in full</option>
+    </select>
+    <div id="pay-details-wrap">
+      <label>Payment method</label>
+      <select id="pay-method" onchange="calcChange()"></select>
+      <label>Amount received (RM)</label>
+      <input id="pay-amount" type="number" min="0" step="0.10" placeholder="0.00" inputmode="decimal" oninput="calcChange()">
+      <div id="pay-feedback"></div>
+    </div>
+    <div style="display:flex;gap:8px;margin-top:10px">
+      <button class="btn btn-full" style="flex:1" onclick="closeModal('modal-payment')">Cancel</button>
+      <button class="btn btn-primary btn-full" style="flex:2" onclick="savePayment()"><i class="fa-solid fa-check"></i> Update</button>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ═══════════════════════════════════════════════════
+   SUPABASE INIT
+   ═══════════════════════════════════════════════════ */
+let db = null;
+try {
+  if (SUPABASE_URL !== 'YOUR_SUPABASE_URL') {
+    db = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+  }
+} catch(e) { console.warn('Supabase not configured, running in offline mode'); }
+
+/* ═══════════════════════════════════════════════════
+   STATE
+   ═══════════════════════════════════════════════════ */
+let S = {
+  ckt:     [{ name:'Dry', price:8 }, { name:'Wet', price:8 }, { name:'Black sauce', price:9 }, { name:'Extra spicy', price:9 }],
+  addon:   [{ name:'Extra egg', price:1.5 }, { name:'Prawn', price:3 }, { name:'Cockles', price:2 }, { name:'No bean sprouts', price:0 }, { name:'Extra chilli', price:0 }],
+  payment: ['QR / DuitNow','Cash','Online transfer'],
+  status:  ['In queue','Done']
+};
+let orders = [];
+let editId = null, payId = null, orderFilter = 'all', reportPeriod = 'daily';
+
+/* ═══════════════════════════════════════════════════
+   HELPERS
+   ═══════════════════════════════════════════════════ */
+const p2 = n => String(n).padStart(2,'0');
+const todayKey = () => { const d=new Date(); return `${d.getFullYear()}${p2(d.getMonth()+1)}${p2(d.getDate())}`; };
+const weekKey  = d => { const t=new Date(d); t.setHours(0,0,0,0); t.setDate(t.getDate()-t.getDay()); return `${t.getFullYear()}${p2(t.getMonth()+1)}${p2(t.getDate())}`; };
+const monthKey = d => `${d.getFullYear()}${p2(d.getMonth()+1)}`;
+const nowStr   = () => new Date().toLocaleString('en-MY',{day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'});
+
+function genId() {
+  const dk = todayKey();
+  const n  = orders.filter(o => o.date === dk).length + 1;
+  return `${dk}-${String(n).padStart(3,'0')}`;
+}
+
+function calcTotal(items, discount) {
+  let t = 0;
+  items.forEach(i => {
+    const c  = S.ckt.find(x => x.name === i.ckt);
+    let   ap = 0;
+    (i.addons || []).forEach(a => { const ao = S.addon.find(x => x.name === a); if(ao) ap += ao.price; });
+    t += ((c ? c.price : 0) + ap) * (i.qty || 1);
+  });
+  return Math.max(0, parseFloat((t - (parseFloat(discount) || 0)).toFixed(2)));
+}
+
+function showToast(msg) {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.classList.add('show');
+  setTimeout(() => el.classList.remove('show'), 2500);
+}
+
+function payBadge(o) {
+  if(o.paid === 'paid')    return `<span class="badge badge-paid">Paid</span>`;
+  if(o.paid === 'partial') return `<span class="badge badge-partial">Partial</span>`;
+  return `<span class="badge badge-unpaid">Unpaid</span>`;
+}
+
+/* ═══════════════════════════════════════════════════
+   LOCAL STORAGE FALLBACK
+   ═══════════════════════════════════════════════════ */
+function saveLocal() {
+  try { localStorage.setItem('hk_orders', JSON.stringify(orders)); localStorage.setItem('hk_settings', JSON.stringify(S)); } catch(e){}
+}
+function loadLocal() {
+  try {
+    const o = localStorage.getItem('hk_orders');    if(o) orders = JSON.parse(o);
+    const s = localStorage.getItem('hk_settings');  if(s) S      = JSON.parse(s);
+  } catch(e){}
+}
+
+/* ═══════════════════════════════════════════════════
+   SUPABASE SYNC
+   ═══════════════════════════════════════════════════ */
+async function syncAll() {
+  if(!db) { showToast('ℹ️ Running offline — configure Supabase to sync'); return; }
+  try {
+    showToast('🔄 Syncing...');
+    // Pull orders
+    const { data: remoteOrders, error } = await db.from('orders').select('*').order('created_at', { ascending: false });
+    if(error) throw error;
+    if(remoteOrders) orders = remoteOrders.map(r => ({ ...r.data, id: r.id, date: r.date }));
+    // Pull settings
+    const { data: remoteSettings } = await db.from('settings').select('*').single();
+    if(remoteSettings) S = remoteSettings.data;
+    saveLocal();
+    renderCurrentScreen();
+    showToast('✅ Synced!');
+  } catch(e) {
+    console.error(e);
+    showToast('⚠️ Sync failed — check connection');
+  }
+}
+
+async function pushOrder(order) {
+  saveLocal();
+  if(!db) return;
+  try {
+    await db.from('orders').upsert({ id: order.id, date: order.date, data: order });
+  } catch(e) { console.error('Push order failed:', e); }
+}
+
+async function pushSettings() {
+  saveLocal();
+  if(!db) return;
+  try {
+    await db.from('settings').upsert({ id: 'global', data: S });
+  } catch(e) { console.error('Push settings failed:', e); }
+}
+
+async function deleteOrderRemote(id) {
+  saveLocal();
+  if(!db) return;
+  try { await db.from('orders').delete().eq('id', id); } catch(e){}
+}
+
+/* ═══════════════════════════════════════════════════
+   NAVIGATION
+   ═══════════════════════════════════════════════════ */
+function showScreen(s) {
+  document.querySelectorAll('.screen').forEach(e => e.classList.remove('active'));
+  document.querySelectorAll('.nav-btn').forEach(e => e.classList.remove('active'));
+  document.getElementById('screen-'+s).classList.add('active');
+  document.getElementById('nav-'+s).classList.add('active');
+  renderCurrentScreen(s);
+}
+
+function renderCurrentScreen(s) {
+  s = s || document.querySelector('.nav-btn.active')?.id.replace('nav-','');
+  if(s === 'orders')   renderOrders();
+  if(s === 'payment')  renderPayment();
+  if(s === 'chef')     renderChef();
+  if(s === 'report')   renderReport();
+  if(s === 'settings') renderSettings();
+}
+
+/* ═══════════════════════════════════════════════════
+   ORDER FORM
+   ═══════════════════════════════════════════════════ */
+function openNewOrder() {
+  editId = null;
+  document.getElementById('modal-title').textContent = 'New order';
+  document.getElementById('o-name').value     = '';
+  document.getElementById('o-time').value     = '';
+  document.getElementById('o-discount').value = '';
+  document.getElementById('menu-items-container').innerHTML = '';
+  addMenuItem();
+  updatePreview();
+  document.getElementById('modal-order').classList.add('open');
+  setTimeout(() => document.getElementById('o-name').focus(), 300);
+}
+
+function addMenuItem(data) {
+  const c   = document.getElementById('menu-items-container');
+  const idx = c.children.length + 1;
+  const div = document.createElement('div');
+  div.className = 'menu-block';
+
+  const cktOpts   = S.ckt.map(x => `<option value="${x.name}" ${data&&data.ckt===x.name?'selected':''}>${x.name} — RM${x.price.toFixed(2)}</option>`).join('');
+  const addonHtml = S.addon.map(x => `<div class="addon-chip ${data&&data.addons&&data.addons.includes(x.name)?'sel':''}" onclick="toggleAddon(this)" data-addon="${x.name}">${x.name}${x.price>0?' <span style=\'font-size:10px\'>+RM'+x.price.toFixed(2)+'</span>':''}</div>`).join('');
+
+  div.innerHTML = `
+    <div class="menu-block-header">
+      <span class="menu-block-num">ITEM ${idx}</span>
+      <button class="remove-item-btn" onclick="this.closest('.menu-block').remove();renumberItems();updatePreview()" title="Remove"><i class="fa-solid fa-xmark"></i></button>
+    </div>
+    <label style="margin-top:0">CKT type</label>
+    <select class="i-ckt" onchange="updatePreview()"><option value="">Select type</option>${cktOpts}</select>
+    <label>Quantity</label>
+    <div class="qty-row" style="margin-bottom:10px">
+      <button class="qty-btn" onclick="chgQty(this,-1)">−</button>
+      <span class="qty-val">${data&&data.qty?data.qty:1}</span>
+      <button class="qty-btn" onclick="chgQty(this,1)">+</button>
+    </div>
+    <label>Add-ons</label>
+    <div class="addon-grid">${addonHtml}</div>
+    <label>Remark</label>
+    <textarea class="i-remark" placeholder="e.g. less oil, no chilli...">${data&&data.remark||''}</textarea>
+  `;
+  c.appendChild(div);
+  updatePreview();
+}
+
+function renumberItems() {
+  document.querySelectorAll('.menu-block-num').forEach((el, i) => el.textContent = `ITEM ${i+1}`);
+}
+
+function chgQty(btn, d) {
+  const qv = btn.parentNode.querySelector('.qty-val');
+  let v = parseInt(qv.textContent) + d;
+  if(v < 1) v = 1;
+  qv.textContent = v;
+  updatePreview();
+}
+
+function toggleAddon(el) { el.classList.toggle('sel'); updatePreview(); }
+
+function collectItems() {
+  return [...document.querySelectorAll('.menu-block')].map(b => {
+    const ckt = b.querySelector('.i-ckt').value;
+    if(!ckt) return null;
+    return {
+      ckt,
+      addons: [...b.querySelectorAll('.addon-chip.sel')].map(e => e.dataset.addon),
+      qty:    parseInt(b.querySelector('.qty-val').textContent) || 1,
+      remark: b.querySelector('.i-remark').value.trim()
+    };
+  }).filter(Boolean);
+}
+
+function updatePreview() {
+  const items = collectItems();
+  const disc  = parseFloat(document.getElementById('o-discount').value) || 0;
+  let html = '';
+  items.forEach(i => {
+    const c = S.ckt.find(x => x.name === i.ckt); if(!c) return;
+    let ap = 0; const al = [];
+    (i.addons||[]).forEach(a => { const ao = S.addon.find(x => x.name === a); if(ao){ ap += ao.price; if(ao.price>0) al.push(`${a} +RM${ao.price.toFixed(2)}`); } });
+    const lt = (c.price + ap) * (i.qty || 1);
+    html += `<div class="price-row"><span>${i.ckt}${i.qty>1?' ×'+i.qty:''}</span><span>RM${lt.toFixed(2)}</span></div>`;
+    al.forEach(a => html += `<div class="price-row" style="padding-left:12px;font-size:12px"><span>${a}</span></div>`);
+  });
+  if(disc > 0) html += `<div class="price-row" style="color:#065F46"><span>Discount</span><span>−RM${disc.toFixed(2)}</span></div>`;
+  const total = calcTotal(items, disc);
+  if(html) html += `<div class="price-total"><span>Total</span><span>RM${total.toFixed(2)}</span></div>`;
+  document.getElementById('order-price-preview').innerHTML = html;
+}
+
+async function saveOrder() {
+  const name = document.getElementById('o-name').value.trim();
+  const time = document.getElementById('o-time').value;
+  const disc = parseFloat(document.getElementById('o-discount').value) || 0;
+  if(!name) { showToast('⚠️ Enter customer name'); return; }
+  if(!time) { showToast('⚠️ Enter collection time'); return; }
+  const items = collectItems();
+  if(!items.length) { showToast('⚠️ Add at least one item'); return; }
+  const d     = new Date();
+  const total = calcTotal(items, disc);
+  if(editId) {
+    const o = orders.find(x => x.id === editId);
+    Object.assign(o, { name, time, items, discount: disc, total });
+    await pushOrder(o);
+    showToast('✅ Order updated');
+  } else {
+    const order = {
+      id: genId(), name, time, items, discount: disc, total,
+      status: 'In queue', paid: 'unpaid', payMethod: '', amountPaid: 0,
+      timestamp: nowStr(), date: todayKey(), week: weekKey(d), month: monthKey(d)
+    };
+    orders.unshift(order);
+    await pushOrder(order);
+    showToast('✅ Order saved');
+  }
+  closeModal('modal-order');
+  renderOrders();
+}
+
+function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+
+/* ═══════════════════════════════════════════════════
+   ORDERS SCREEN
+   ═══════════════════════════════════════════════════ */
+function filterOrders(f, btn) {
+  orderFilter = f;
+  document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  renderOrders();
+}
+
+function renderOrders() {
+  const el   = document.getElementById('orders-list');
+  let   list = orders.filter(o => orderFilter==='all' || o.paid===orderFilter);
+  list = [...list].sort((a,b) => b.id.localeCompare(a.id));
+  if(!list.length) {
+    el.innerHTML = `<div class="empty-state"><i class="fa-solid fa-clipboard"></i>No orders yet.<br>Tap <strong>New order</strong> to start.</div>`;
+    return;
+  }
+  el.innerHTML = list.map(o => `
+    <div class="card">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start">
+        <div>
+          <div class="order-id">${o.id}</div>
+          <div class="order-name">${o.name}</div>
+          <div class="order-meta"><i class="fa-solid fa-clock" style="font-size:11px"></i> ${o.time} &nbsp;<span class="badge badge-${o.status==='Done'?'done':'queue'}">${o.status}</span></div>
+        </div>
+        ${payBadge(o)}
+      </div>
+      ${o.items.map(i=>`<div class="order-item"><div class="order-item-name">${i.ckt}${i.qty>1?' ×'+i.qty:''}</div>${i.addons&&i.addons.length?`<div class="order-item-addons">+ ${i.addons.join(', ')}</div>`:''} ${i.remark?`<div class="order-item-remark">${i.remark}</div>`:''}</div>`).join('')}
+      <div class="price-total"><span>Total${o.discount>0?` (−RM${o.discount.toFixed(2)})`:''}</span><span>RM${o.total.toFixed(2)}</span></div>
+      ${o.paid==='partial'?`<div style="font-size:12px;color:var(--ember);margin-top:2px">Paid RM${o.amountPaid.toFixed(2)} · Balance RM${(o.total-o.amountPaid).toFixed(2)}</div>`:''}
+      <div class="timestamp">Ordered: ${o.timestamp}</div>
+      <div style="display:flex;gap:8px;margin-top:8px">
+        <button class="btn btn-sm" onclick="editOrder('${o.id}')"><i class="fa-solid fa-pen"></i> Edit</button>
+        <button class="btn btn-sm btn-danger" onclick="delOrder('${o.id}')"><i class="fa-solid fa-trash"></i></button>
+      </div>
+    </div>`).join('');
+}
+
+function editOrder(id) {
+  const o = orders.find(x => x.id === id);
+  editId  = id;
+  document.getElementById('modal-title').textContent = 'Edit order';
+  document.getElementById('o-name').value     = o.name;
+  document.getElementById('o-time').value     = o.time;
+  document.getElementById('o-discount').value = o.discount || '';
+  document.getElementById('menu-items-container').innerHTML = '';
+  o.items.forEach(i => addMenuItem(i));
+  updatePreview();
+  document.getElementById('modal-order').classList.add('open');
+}
+
+async function delOrder(id) {
+  if(!confirm('Delete this order?')) return;
+  orders = orders.filter(x => x.id !== id);
+  await deleteOrderRemote(id);
+  showToast('🗑️ Order deleted');
+  renderOrders();
+}
+
+async function clearTodayOrders() {
+  if(!confirm('Delete ALL orders from today? This cannot be undone.')) return;
+  const tk  = todayKey();
+  const del = orders.filter(o => o.date === tk);
+  orders    = orders.filter(o => o.date !== tk);
+  for(const o of del) await deleteOrderRemote(o.id);
+  saveLocal();
+  showToast('🗑️ Today\'s orders cleared');
+  renderOrders();
+}
+
+/* ═══════════════════════════════════════════════════
+   PAYMENT SCREEN
+   ═══════════════════════════════════════════════════ */
+function renderPayment() {
+  const el = document.getElementById('payment-list');
+  if(!orders.length) { el.innerHTML = `<div class="empty-state"><i class="fa-solid fa-credit-card"></i>No orders yet</div>`; return; }
+  const sorted = [...orders].sort((a,b) => a.time.localeCompare(b.time));
+  el.innerHTML = sorted.map(o => `
+    <div class="card">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start">
+        <div>
+          <div class="order-id">${o.id}</div>
+          <div class="order-name">${o.name}</div>
+          <div class="order-meta"><i class="fa-solid fa-clock" style="font-size:11px"></i> ${o.time}</div>
+        </div>
+        ${payBadge(o)}
+      </div>
+      <div class="price-total"><span>Total</span><span>RM${o.total.toFixed(2)}</span></div>
+      ${o.paid==='partial'?`<div style="font-size:12px;color:var(--ember)">Paid RM${o.amountPaid.toFixed(2)} · Balance RM${(o.total-o.amountPaid).toFixed(2)}</div>`:''}
+      ${o.paid!=='unpaid'?`<div style="font-size:12px;color:var(--muted);margin-top:2px"><i class="fa-solid fa-credit-card"></i> ${o.payMethod}</div>`:''}
+      <button class="btn btn-primary btn-sm" style="margin-top:8px" onclick="openPayment('${o.id}')"><i class="fa-solid fa-pen"></i> Update payment</button>
+    </div>`).join('');
+}
+
+function openPayment(id) {
+  payId = id;
+  const o = orders.find(x => x.id === id);
+  document.getElementById('pay-modal-title').textContent = `Payment — ${o.name}`;
+  document.getElementById('pay-order-summary').innerHTML = `
+    <div style="font-weight:600;color:var(--dark)">${o.id}</div>
+    <div style="font-size:13px;margin-top:2px">${o.name} · ${o.items.length} item(s)</div>
+    <div class="price-total" style="margin-top:8px;padding-top:8px"><span>Total</span><span>RM${o.total.toFixed(2)}</span></div>`;
+  document.getElementById('pay-status').value = o.paid === 'paid' ? 'paid' : o.paid === 'partial' ? 'partial' : 'unpaid';
+  document.getElementById('pay-method').innerHTML = S.payment.map(p => `<option ${o.payMethod===p?'selected':''}>${p}</option>`).join('');
+  document.getElementById('pay-amount').value = o.amountPaid > 0 ? o.amountPaid.toFixed(2) : '';
+  updatePayUI();
+  document.getElementById('modal-payment').classList.add('open');
+}
+
+function updatePayUI() {
+  const s = document.getElementById('pay-status').value;
+  document.getElementById('pay-details-wrap').style.display = s === 'unpaid' ? 'none' : 'block';
+  if(s !== 'unpaid') calcChange();
+  else document.getElementById('pay-feedback').innerHTML = '';
+}
+
+function calcChange() {
+  const o      = orders.find(x => x.id === payId); if(!o) return;
+  const status = document.getElementById('pay-status').value;
+  const method = document.getElementById('pay-method').value;
+  const amount = parseFloat(document.getElementById('pay-amount').value) || 0;
+  let   html   = '';
+  if(status === 'paid' && method === 'Cash' && amount > 0) {
+    const ch = amount - o.total;
+    html = ch >= 0
+      ? `<div class="change-box"><div class="change-label">Change to return</div><div class="change-val">RM${ch.toFixed(2)}</div></div>`
+      : `<div class="balance-box"><div class="balance-label">Short by</div><div class="balance-val">RM${Math.abs(ch).toFixed(2)}</div></div>`;
+  } else if(status === 'partial' && amount > 0) {
+    const bal = o.total - amount;
+    if(bal > 0) html = `<div class="balance-box"><div class="balance-label">Outstanding balance</div><div class="balance-val">RM${bal.toFixed(2)}</div></div>`;
+  }
+  document.getElementById('pay-feedback').innerHTML = html;
+}
+
+async function savePayment() {
+  const o = orders.find(x => x.id === payId);
+  o.paid = document.getElementById('pay-status').value;
+  if(o.paid !== 'unpaid') {
+    o.payMethod  = document.getElementById('pay-method').value;
+    o.amountPaid = parseFloat(document.getElementById('pay-amount').value) || 0;
+  } else {
+    o.payMethod = ''; o.amountPaid = 0;
+  }
+  await pushOrder(o);
+  showToast('✅ Payment updated');
+  closeModal('modal-payment');
+  renderPayment();
+}
+
+/* ═══════════════════════════════════════════════════
+   CHEF SCREEN
+   ═══════════════════════════════════════════════════ */
+function renderChef() {
+  const el      = document.getElementById('chef-list');
+  const pending = orders.filter(o => o.status !== 'Done').length;
+  document.getElementById('chef-count').textContent = `${pending} pending`;
+  const sorted  = [...orders].sort((a,b) => a.time.localeCompare(b.time));
+  if(!sorted.length) { el.innerHTML = `<div class="empty-state"><i class="fa-solid fa-hat-chef"></i>No orders yet</div>`; return; }
+  el.innerHTML  = sorted.map(o => `
+    <div class="card card-chef ${o.status==='Done'?'done':''}">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start">
+        <div>
+          <div class="order-id">${o.id}</div>
+          <div class="order-name">${o.name}</div>
+          <div style="font-size:14px;font-weight:600;color:var(--gold);margin-top:3px"><i class="fa-solid fa-clock"></i> Collect ${o.time}</div>
+        </div>
+        <span class="badge badge-${o.status==='Done'?'done':'queue'}">${o.status}</span>
+      </div>
+      ${o.items.map((i,n)=>`<div class="order-item"><div class="order-item-name">${n+1}. ${i.ckt}${i.qty>1?' ×'+i.qty:''}</div>${i.addons&&i.addons.length?`<div class="order-item-addons">+ ${i.addons.join(', ')}</div>`:''} ${i.remark?`<div class="order-item-remark">${i.remark}</div>`:''}</div>`).join('')}
+      ${o.status !== 'Done'
+        ? `<button class="btn btn-primary btn-full" style="margin-top:10px" onclick="markDone('${o.id}')"><i class="fa-solid fa-check"></i> Mark as done</button>`
+        : `<div style="font-size:13px;color:var(--success-fg);margin-top:8px;font-weight:600"><i class="fa-solid fa-circle-check"></i> Completed</div>`}
+    </div>`).join('');
+}
+
+async function markDone(id) {
+  const o  = orders.find(x => x.id === id);
+  o.status = 'Done';
+  await pushOrder(o);
+  showToast('✅ Marked as done');
+  renderChef();
+}
+
+/* ═══════════════════════════════════════════════════
+   REPORT SCREEN
+   ═══════════════════════════════════════════════════ */
+function getFiltered() {
+  const d = new Date();
+  if(reportPeriod === 'daily')   return orders.filter(o => o.date  === todayKey());
+  if(reportPeriod === 'weekly')  return orders.filter(o => o.week  === weekKey(d));
+  return orders.filter(o => o.month === monthKey(d));
+}
+
+function setPeriod(p, btn) {
+  reportPeriod = p;
+  document.querySelectorAll('.period-tab').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  renderReport();
+}
+
+function renderReport() {
+  const list        = getFiltered();
+  const revenue     = list.filter(o => o.paid !== 'unpaid').reduce((s,o) => s + (o.amountPaid||0), 0);
+  const outstanding = list.reduce((s,o) => s + (o.total - (o.amountPaid||0)), 0);
+  const totalItems  = list.reduce((s,o) => s + o.items.reduce((a,i) => a + (i.qty||1), 0), 0);
+  const byMethod    = {};
+  list.filter(o => o.paid !== 'unpaid').forEach(o => { byMethod[o.payMethod] = (byMethod[o.payMethod]||0) + (o.amountPaid||0); });
+  const cktCount = {};
+  list.forEach(o => o.items.forEach(i => { cktCount[i.ckt] = (cktCount[i.ckt]||0) + (i.qty||1); }));
+  const top3   = Object.entries(cktCount).sort((a,b) => b[1]-a[1]).slice(0,3);
+  const maxC   = top3.length ? top3[0][1] : 1;
+  const sorted = [...list].sort((a,b) => a.time.localeCompare(b.time));
+
+  document.getElementById('report-content').innerHTML = `
+    <div class="metric-grid">
+      <div class="metric"><div class="metric-label">Total orders</div><div class="metric-val">${list.length}</div></div>
+      <div class="metric"><div class="metric-label">Total items</div><div class="metric-val">${totalItems}</div></div>
+      <div class="metric"><div class="metric-label">Revenue (RM)</div><div class="metric-val gold">${revenue.toFixed(2)}</div></div>
+      <div class="metric"><div class="metric-label">Outstanding (RM)</div><div class="metric-val ember">${outstanding.toFixed(2)}</div></div>
+    </div>
+
+    <div class="section-label">Revenue by payment method</div>
+    <div class="card" style="padding:8px 12px;margin-bottom:10px">
+      ${Object.keys(byMethod).length
+        ? Object.entries(byMethod).map(([k,v]) => `<div class="price-row"><span>${k}</span><span style="font-weight:600;color:var(--gold)">RM${v.toFixed(2)}</span></div>`).join('')
+        : `<div style="font-size:13px;color:var(--muted)">No paid orders yet</div>`}
+    </div>
+
+    <div class="section-label">Top 3 menu items</div>
+    <div class="card" style="padding:8px 12px;margin-bottom:10px">
+      ${top3.length
+        ? top3.map(([n,c],i) => `<div class="top-item"><div class="top-rank">${['🥇','🥈','🥉'][i]}</div><div class="top-bar-bg"><div class="top-name">${n}</div><div class="top-count">${c} portion${c>1?'s':''}</div><div class="top-bar" style="width:${Math.round(c/maxC*100)}%"></div></div></div>`).join('')
+        : `<div style="font-size:13px;color:var(--muted)">No data yet</div>`}
+    </div>
+
+    <div class="section-label">Chef cooking list</div>
+    <div class="rtable-wrap">
+      <table class="rtable">
+        <thead><tr><th>Order ID</th><th>Name</th><th>Time</th><th>Items</th><th>Status</th></tr></thead>
+        <tbody>${sorted.length
+          ? sorted.map(o=>`<tr><td>${o.id}</td><td>${o.name}</td><td><strong>${o.time}</strong></td><td>${o.items.map(i=>i.ckt+(i.qty>1?' ×'+i.qty:'')+(i.addons&&i.addons.length?' +'+i.addons.join(', '):'')+(i.remark?' ('+i.remark+')':'')).join('<br>')}</td><td>${o.status}</td></tr>`).join('')
+          : `<tr><td colspan="5" style="color:var(--muted)">No orders</td></tr>`}
+        </tbody>
+      </table>
+    </div>
+
+    <div class="section-label">Full order record</div>
+    <div class="rtable-wrap">
+      <table class="rtable">
+        <thead><tr><th>ID</th><th>Name</th><th>Time</th><th>Total</th><th>Payment</th><th>Status</th></tr></thead>
+        <tbody>${list.length
+          ? sorted.map(o=>`<tr><td>${o.id}</td><td>${o.name}</td><td>${o.time}</td><td>RM${o.total.toFixed(2)}</td><td>${o.paid==='paid'?'Paid · '+o.payMethod:o.paid==='partial'?'Partial · RM'+o.amountPaid.toFixed(2):'Unpaid'}</td><td>${o.status}</td></tr>`).join('')
+          : `<tr><td colspan="6" style="color:var(--muted)">No orders</td></tr>`}
+        </tbody>
+      </table>
+    </div>`;
+}
+
+function printReport() {
+  const list        = getFiltered();
+  const periodLabel = reportPeriod==='daily'?'Today':reportPeriod==='weekly'?'This week':'This month';
+  const revenue     = list.filter(o=>o.paid!=='unpaid').reduce((s,o)=>s+(o.amountPaid||0),0);
+  const outstanding = list.reduce((s,o)=>s+(o.total-(o.amountPaid||0)),0);
+  const byMethod    = {};
+  list.filter(o=>o.paid!=='unpaid').forEach(o=>{byMethod[o.payMethod]=(byMethod[o.payMethod]||0)+(o.amountPaid||0)});
+  const cktCount={};list.forEach(o=>o.items.forEach(i=>{cktCount[i.ckt]=(cktCount[i.ckt]||0)+(i.qty||1)}));
+  const top3   = Object.entries(cktCount).sort((a,b)=>b[1]-a[1]).slice(0,3);
+  const sorted = [...list].sort((a,b)=>a.time.localeCompare(b.time));
+  const date   = new Date().toLocaleDateString('en-MY',{day:'2-digit',month:'long',year:'numeric'});
+
+  const w = window.open('','_blank');
+  w.document.write(`<!DOCTYPE html><html><head><title>0101 Hot Kitchen — Report</title><style>
+  body{font-family:Arial,sans-serif;font-size:11px;padding:15mm;color:#2C1810}
+  .hdr{display:flex;align-items:center;gap:12px;border-bottom:2px solid #BA7517;padding-bottom:10px;margin-bottom:14px}
+  .hdr-box{width:44px;height:44px;background:#412402;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:900;color:#EF9F27;text-align:center;line-height:1.3}
+  h1{font-size:16px;color:#2C1810;margin:0}
+  h2{font-size:12px;margin:14px 0 5px;color:#854F0B;border-bottom:0.5px solid #E8D5B0;padding-bottom:3px}
+  .metrics{display:flex;gap:8px;margin-bottom:14px}
+  .metric{border:1px solid #E8D5B0;border-radius:4px;padding:8px 10px;flex:1;background:#FDF6EE}
+  .ml{font-size:9px;color:#7A5C3A}.mv{font-size:18px;font-weight:700;color:#BA7517}
+  table{width:100%;border-collapse:collapse;margin-bottom:10px}
+  th,td{border:1px solid #E8D5B0;padding:5px 6px;text-align:left;vertical-align:top;font-size:10px}
+  th{background:#FDF6EE;font-weight:600;color:#854F0B}
+  .bp{background:#D1FAE5;color:#065F46;padding:2px 5px;border-radius:3px;font-size:9px}
+  .bu{background:#FEF3C7;color:#854F0B;padding:2px 5px;border-radius:3px;font-size:9px}
+  .bq{background:#FEF3C7;color:#854F0B;padding:2px 5px;border-radius:3px;font-size:9px}
+  .bpa{background:#DBEAFE;color:#1E40AF;padding:2px 5px;border-radius:3px;font-size:9px}
+  @media print{body{padding:10mm}}
+  </style></head><body>
+  <div class="hdr"><div class="hdr-box">0101<br>HK</div><div><h1>0101 Hot Kitchen</h1><div style="font-size:11px;color:#7A5C3A">Report: ${periodLabel} &nbsp;·&nbsp; Printed: ${date}</div></div></div>
+  <div class="metrics">
+    <div class="metric"><div class="ml">Total orders</div><div class="mv">${list.length}</div></div>
+    <div class="metric"><div class="ml">Revenue (RM)</div><div class="mv">${revenue.toFixed(2)}</div></div>
+    <div class="metric"><div class="ml">Outstanding (RM)</div><div class="mv" style="color:#854F0B">${outstanding.toFixed(2)}</div></div>
+    <div class="metric"><div class="ml">Items sold</div><div class="mv">${list.reduce((s,o)=>s+o.items.reduce((a,i)=>a+(i.qty||1),0),0)}</div></div>
+  </div>
+  <h2>Revenue by payment method</h2>
+  <table><thead><tr><th>Method</th><th>Amount (RM)</th></tr></thead><tbody>
+  ${Object.entries(byMethod).map(([k,v])=>`<tr><td>${k}</td><td>RM${v.toFixed(2)}</td></tr>`).join('')||'<tr><td colspan="2">No paid orders</td></tr>'}
+  </tbody></table>
+  <h2>Top 3 menu items</h2>
+  <table><thead><tr><th>Rank</th><th>Item</th><th>Portions</th></tr></thead><tbody>
+  ${top3.map(([n,c],i)=>`<tr><td>${['1st','2nd','3rd'][i]}</td><td>${n}</td><td>${c}</td></tr>`).join('')||'<tr><td colspan="3">No data</td></tr>'}
+  </tbody></table>
+  <h2>Chef cooking list (sorted by collection time)</h2>
+  <table><thead><tr><th>Order ID</th><th>Customer</th><th>Collect at</th><th>Items & remarks</th><th>Status</th></tr></thead><tbody>
+  ${sorted.map(o=>`<tr><td>${o.id}</td><td>${o.name}</td><td><strong>${o.time}</strong></td><td>${o.items.map((i,n)=>`${n+1}. ${i.ckt}${i.qty>1?' ×'+i.qty:''}${i.addons&&i.addons.length?' + '+i.addons.join(', '):''}${i.remark?' ('+i.remark+')':''}`).join('<br>')}</td><td><span class="${o.status==='Done'?'bp':'bq'}">${o.status}</span></td></tr>`).join('')||'<tr><td colspan="5">No orders</td></tr>'}
+  </tbody></table>
+  <h2>Full order record</h2>
+  <table><thead><tr><th>Order ID</th><th>Customer</th><th>Time</th><th>Items</th><th>Total</th><th>Disc</th><th>Payment</th><th>Ordered at</th><th>Status</th></tr></thead><tbody>
+  ${sorted.map(o=>`<tr><td>${o.id}</td><td>${o.name}</td><td>${o.time}</td><td>${o.items.map(i=>i.ckt+(i.qty>1?' ×'+i.qty:'')).join(', ')}</td><td>RM${o.total.toFixed(2)}</td><td>${o.discount>0?'RM'+o.discount.toFixed(2):'-'}</td><td><span class="${o.paid==='paid'?'bp':o.paid==='partial'?'bpa':'bu'}">${o.paid==='paid'?'Paid · '+o.payMethod:o.paid==='partial'?'Partial · RM'+o.amountPaid.toFixed(2):'Unpaid'}</span></td><td>${o.timestamp}</td><td><span class="${o.status==='Done'?'bp':'bq'}">${o.status}</span></td></tr>`).join('')||'<tr><td colspan="9">No orders</td></tr>'}
+  </tbody></table>
+  </body></html>`);
+  w.document.close(); w.focus(); setTimeout(() => w.print(), 600);
+}
+
+/* ═══════════════════════════════════════════════════
+   SETTINGS SCREEN
+   ═══════════════════════════════════════════════════ */
+function renderSettings() {
+  document.getElementById('tag-ckt').innerHTML = S.ckt.map((t,i) =>
+    `<span class="tag">${t.name} <span class="tag-price">RM${t.price.toFixed(2)}</span><button class="tag-del" onclick="removeCkt(${i})" title="Remove"><i class="fa-solid fa-xmark"></i></button></span>`).join('');
+  document.getElementById('tag-addon').innerHTML = S.addon.map((t,i) =>
+    `<span class="tag">${t.name} <span class="tag-price">${t.price>0?'RM'+t.price.toFixed(2):'free'}</span><button class="tag-del" onclick="removeAddon(${i})" title="Remove"><i class="fa-solid fa-xmark"></i></button></span>`).join('');
+  ['payment','status'].forEach(type => {
+    document.getElementById('tag-'+type).innerHTML = S[type].map((t,i) =>
+      `<span class="tag">${t}<button class="tag-del" onclick="removeSimpleTag('${type}',${i})" title="Remove"><i class="fa-solid fa-xmark"></i></button></span>`).join('');
+  });
+}
+
+async function addCkt() {
+  const n = document.getElementById('new-ckt-name').value.trim();
+  const p = parseFloat(document.getElementById('new-ckt-price').value) || 0;
+  if(!n) { showToast('⚠️ Enter type name'); return; }
+  S.ckt.push({ name:n, price:p });
+  document.getElementById('new-ckt-name').value = '';
+  document.getElementById('new-ckt-price').value = '';
+  await pushSettings(); renderSettings(); showToast('✅ CKT type added');
+}
+async function removeCkt(i) { S.ckt.splice(i,1); await pushSettings(); renderSettings(); }
+
+async function addAddon() {
+  const n = document.getElementById('new-addon-name').value.trim();
+  const p = parseFloat(document.getElementById('new-addon-price').value) || 0;
+  if(!n) { showToast('⚠️ Enter add-on name'); return; }
+  S.addon.push({ name:n, price:p });
+  document.getElementById('new-addon-name').value = '';
+  document.getElementById('new-addon-price').value = '';
+  await pushSettings(); renderSettings(); showToast('✅ Add-on added');
+}
+async function removeAddon(i) { S.addon.splice(i,1); await pushSettings(); renderSettings(); }
+
+async function addSimpleTag(type) {
+  const el = document.getElementById('new-'+type);
+  const v  = el.value.trim();
+  if(!v) return;
+  S[type].push(v); el.value = '';
+  await pushSettings(); renderSettings();
+}
+async function removeSimpleTag(type, i) { S[type].splice(i,1); await pushSettings(); renderSettings(); }
+
+/* ═══════════════════════════════════════════════════
+   OFFLINE DETECTION
+   ═══════════════════════════════════════════════════ */
+window.addEventListener('online',  () => { document.getElementById('offline-banner').classList.remove('show'); syncAll(); });
+window.addEventListener('offline', () => { document.getElementById('offline-banner').classList.add('show'); });
+
+/* ═══════════════════════════════════════════════════
+   INIT
+   ═══════════════════════════════════════════════════ */
+document.addEventListener('DOMContentLoaded', async () => {
+  document.getElementById('topbar-date').textContent =
+    new Date().toLocaleDateString('en-MY',{weekday:'short',day:'numeric',month:'short',year:'numeric'});
+
+  loadLocal();
+  renderOrders();
+  renderSettings();
+
+  if(db) {
+    await syncAll();
+  }
+
+  setTimeout(() => {
+    document.getElementById('loading-overlay').classList.add('hidden');
+  }, 800);
+});
+</script>
+</body>
+</html>
