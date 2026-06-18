@@ -249,7 +249,7 @@ textarea { resize: none; height: 52px; }
   <nav class="nav">
     <button class="nav-btn active" id="nav-orders" onclick="showScreen('orders')"><i class="fa-solid fa-clipboard-list"></i>Orders</button>
     <button class="nav-btn" id="nav-payment" onclick="showScreen('payment')"><i class="fa-solid fa-credit-card"></i>Payment</button>
-    <button class="nav-btn" id="nav-chef" onclick="showScreen('chef')"><i class="fa-solid fa-hat-chef"></i>Chef</button>
+    <button class="nav-btn" id="nav-chef" onclick="showScreen('chef')"><i class="fa-solid fa-utensils"></i>Chef</button>
     <button class="nav-btn" id="nav-report" onclick="showScreen('report')"><i class="fa-solid fa-chart-bar"></i>Report</button>
     <button class="nav-btn" id="nav-settings" onclick="showScreen('settings')"><i class="fa-solid fa-gear"></i>Settings</button>
   </nav>
@@ -820,7 +820,7 @@ function renderChef() {
   const pending = orders.filter(o => o.status !== 'Done').length;
   document.getElementById('chef-count').textContent = `${pending} pending`;
   const sorted  = [...orders].sort((a,b) => a.time.localeCompare(b.time));
-  if(!sorted.length) { el.innerHTML = `<div class="empty-state"><i class="fa-solid fa-hat-chef"></i>No orders yet</div>`; return; }
+  if(!sorted.length) { el.innerHTML = `<div class="empty-state"><i class="fa-solid fa-utensils"></i>No orders yet</div>`; return; }
   el.innerHTML  = sorted.map(o => `
     <div class="card card-chef ${o.status==='Done'?'done':''}">
       <div style="display:flex;justify-content:space-between;align-items:flex-start">
