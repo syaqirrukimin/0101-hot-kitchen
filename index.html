@@ -17,10 +17,16 @@
      paste your Project URL and anon key below.
      ═══════════════════════════════════════════════ -->
 <script>
-  const SUPABASE_URL = 'https://hjrenunayzpgidpwwkcl.supabase.co';      // e.g. https://abcxyz.supabase.co
-  const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhqcmVudW5heXpwZ2lkcHd3a2NsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE3NTQ5MjcsImV4cCI6MjA5NzMzMDkyN30.9zEatcQ9Yl2ciBOluQ5u3oNyEHmQ3cYt6-p14fJEFXM'; // long key starting with eyJ...
+  const SUPABASE_URL = 'YOUR_SUPABASE_URL';      // e.g. https://abcxyz.supabase.co
+  const SUPABASE_KEY = 'YOUR_SUPABASE_ANON_KEY'; // long key starting with eyJ...
 </script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+  // ── LOGIN GUARD — must be logged in to view this page ──
+  if (!sessionStorage.getItem('hk_user')) {
+    window.location.href = 'login.html';
+  }
+</script>
 
 <style>
 /* ─── RESET & ROOT ─────────────────────────────── */
@@ -111,6 +117,7 @@ input, select, textarea { width: 100%; padding: 9px 11px; border: 0.5px solid va
 input:focus, select:focus, textarea:focus { outline: none; border-color: var(--gold); box-shadow: 0 0 0 2px rgba(186,117,23,.12); }
 textarea { resize: none; height: 52px; }
 .input-row { display: flex; gap: 8px; }
+.row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
 .input-row input, .input-row select { margin-bottom: 0; }
 
 /* ─── FILTERS ─────────────────────────────────────── */
@@ -170,7 +177,7 @@ textarea { resize: none; height: 52px; }
 .top-bar { height: 4px; border-radius: 2px; background: var(--gold); margin-top: 4px; transition: width .5s ease; }
 
 /* ─── PERIOD TABS ────────────────────────────────── */
-.period-tabs { display: flex; gap: 6px; margin-bottom: 12px; }
+.period-tabs { display: flex; gap: 6px; margin-bottom: 12px; flex-wrap: wrap; }
 .period-tab { padding: 6px 16px; border: 0.5px solid var(--border); border-radius: 20px; background: #fff; cursor: pointer; font-size: 12px; color: var(--muted); font-weight: 500; }
 .period-tab.active { background: var(--gold); color: #fff; border-color: var(--gold); }
 
@@ -200,6 +207,24 @@ textarea { resize: none; height: 52px; }
 
 /* ─── PAY SUMMARY BOX ────────────────────────────── */
 .pay-summary { background: var(--cream); border: 0.5px solid var(--border); border-radius: var(--r8); padding: 10px 12px; margin-bottom: 10px; }
+
+/* CHEF DAY TABS */
+.chef-day-tabs { display: flex; gap: 6px; margin-bottom: 10px; }
+.chef-day-tab { flex: 1; padding: 7px 4px; border: 0.5px solid var(--border); border-radius: 20px; background: #fff; cursor: pointer; font-size: 12px; color: var(--muted); font-weight: 500; text-align: center; }
+.chef-day-tab.active { background: var(--gold); color: #fff; border-color: var(--gold); }
+
+/* SOLD OUT PANEL */
+.soldout-panel { background: #FEF2F2; border: 0.5px solid #FECACA; border-radius: var(--r8); padding: 10px 12px; margin-bottom: 10px; }
+.soldout-panel-title { font-size: 12px; font-weight: 600; color: #991B1B; margin-bottom: 8px; display: flex; align-items: center; gap: 6px; }
+.soldout-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-bottom: 6px; }
+.soldout-chip { padding: 6px 8px; border: 0.5px solid #FECACA; border-radius: 8px; cursor: pointer; font-size: 12px; background: #fff; color: var(--text); user-select: none; display: flex; align-items: center; justify-content: space-between; gap: 4px; }
+.soldout-chip.out { background: #FEE2E2; color: #991B1B; border-color: #FCA5A5; font-weight: 500; }
+.addon-chip.soldout { background: #F3F4F6; color: #9CA3AF; border-color: #E5E7EB; cursor: not-allowed; text-decoration: line-through; opacity: .7; }
+.tag.soldout-tag { background: #FEE2E2; border-color: #FECACA; color: #991B1B; }
+
+/* REPORT DATE PICKER */
+.report-date-row { display: flex; gap: 8px; margin-bottom: 10px; align-items: center; }
+.report-date-row input { flex: 1; margin: 0; }
 </style>
 </head>
 <body>
@@ -243,13 +268,14 @@ textarea { resize: none; height: 52px; }
       <div class="topbar-sub" id="topbar-date"></div>
     </div>
     <button class="topbar-sync" onclick="syncAll()" title="Sync data"><i class="fa-solid fa-rotate"></i></button>
+    <button class="topbar-sync" onclick="doLogout()" title="Log out"><i class="fa-solid fa-right-from-bracket"></i></button>
   </div>
 
   <!-- NAVIGATION -->
   <nav class="nav">
     <button class="nav-btn active" id="nav-orders" onclick="showScreen('orders')"><i class="fa-solid fa-clipboard-list"></i>Orders</button>
     <button class="nav-btn" id="nav-payment" onclick="showScreen('payment')"><i class="fa-solid fa-credit-card"></i>Payment</button>
-    <button class="nav-btn" id="nav-chef" onclick="showScreen('chef')"><i class="fa-solid fa-utensils"></i>Chef</button>
+    <button class="nav-btn" id="nav-chef" onclick="showScreen('chef')"><i class="fa-solid fa-fire-burner"></i>Chef</button>
     <button class="nav-btn" id="nav-report" onclick="showScreen('report')"><i class="fa-solid fa-chart-bar"></i>Report</button>
     <button class="nav-btn" id="nav-settings" onclick="showScreen('settings')"><i class="fa-solid fa-gear"></i>Settings</button>
   </nav>
@@ -282,6 +308,18 @@ textarea { resize: none; height: 52px; }
         <h2 style="margin:0">Kitchen queue</h2>
         <span id="chef-count" class="badge badge-queue">0 pending</span>
       </div>
+      <div class="chef-day-tabs">
+        <button class="chef-day-tab" onclick="setChefDay('yesterday',this)">Yesterday</button>
+        <button class="chef-day-tab active" onclick="setChefDay('today',this)">Today</button>
+        <button class="chef-day-tab" onclick="setChefDay('tomorrow',this)">Tomorrow</button>
+      </div>
+      <div class="soldout-panel">
+        <div class="soldout-panel-title"><i class="fa-solid fa-triangle-exclamation"></i> Mark sold out (tap to toggle)</div>
+        <div class="section-label" style="margin-top:0;margin-bottom:4px">CKT types</div>
+        <div class="soldout-grid" id="soldout-ckt"></div>
+        <div class="section-label" style="margin-bottom:4px">Add-ons</div>
+        <div class="soldout-grid" id="soldout-addon"></div>
+      </div>
       <p style="font-size:12px;color:var(--muted);margin-bottom:10px">Sorted by collection time ↑</p>
       <div id="chef-list"></div>
     </div>
@@ -296,6 +334,12 @@ textarea { resize: none; height: 52px; }
         <button class="period-tab active" onclick="setPeriod('daily',this)">Today</button>
         <button class="period-tab" onclick="setPeriod('weekly',this)">This week</button>
         <button class="period-tab" onclick="setPeriod('monthly',this)">This month</button>
+        <button class="period-tab" onclick="setPeriod('custom',this)">By date</button>
+      </div>
+      <div id="report-date-picker" style="display:none" class="report-date-row">
+        <input type="date" id="report-from" onchange="renderReport()">
+        <span style="font-size:12px;color:var(--muted);flex-shrink:0">to</span>
+        <input type="date" id="report-to" onchange="renderReport()">
       </div>
       <div id="report-content"></div>
     </div>
@@ -322,6 +366,13 @@ textarea { resize: none; height: 52px; }
           <input id="new-addon-price" placeholder="Price" type="number" min="0" step="0.50" style="flex:1">
           <button class="btn btn-primary btn-sm" onclick="addAddon()">Add</button>
         </div>
+      </div>
+
+      <div class="card">
+        <div class="section-label" style="margin-top:0">Restock sold-out items</div>
+        <p style="font-size:12px;color:var(--muted);margin-bottom:8px">Items marked sold out by chef. Tap × to restock.</p>
+        <div class="tag-wrap" id="tag-restock"></div>
+        <div id="restock-empty" style="font-size:13px;color:var(--muted);display:none">✅ All items available</div>
       </div>
 
       <div class="card">
@@ -357,8 +408,11 @@ textarea { resize: none; height: 52px; }
     <h3 id="modal-title">New order</h3>
     <label>Customer name</label>
     <input id="o-name" placeholder="e.g. Ali" autocomplete="off">
-    <label>Collection time</label>
-    <input id="o-time" type="time">
+    <label>Collection date & time</label>
+    <div class="row2">
+      <input id="o-date" type="date">
+      <input id="o-time" type="time">
+    </div>
     <label>Discount (RM) — optional</label>
     <input id="o-discount" type="number" min="0" step="0.50" placeholder="0.00">
     <div class="divider"></div>
@@ -417,22 +471,29 @@ let S = {
   ckt:     [{ name:'Dry', price:8 }, { name:'Wet', price:8 }, { name:'Black sauce', price:9 }, { name:'Extra spicy', price:9 }],
   addon:   [{ name:'Extra egg', price:1.5 }, { name:'Prawn', price:3 }, { name:'Cockles', price:2 }, { name:'No bean sprouts', price:0 }, { name:'Extra chilli', price:0 }],
   payment: ['QR / DuitNow','Cash','Online transfer'],
-  status:  ['In queue','Done']
+  status:  ['In queue','Done'],
+  soldout: []
 };
 let orders = [];
-let editId = null, payId = null, orderFilter = 'all', reportPeriod = 'daily';
+let editId = null, payId = null, orderFilter = 'all', reportPeriod = 'daily', chefDay = 'today';
 
 /* ═══════════════════════════════════════════════════
    HELPERS
    ═══════════════════════════════════════════════════ */
 const p2 = n => String(n).padStart(2,'0');
-const todayKey = () => { const d=new Date(); return `${d.getFullYear()}${p2(d.getMonth()+1)}${p2(d.getDate())}`; };
-const weekKey  = d => { const t=new Date(d); t.setHours(0,0,0,0); t.setDate(t.getDate()-t.getDay()); return `${t.getFullYear()}${p2(t.getMonth()+1)}${p2(t.getDate())}`; };
+const fmtDateKey = d => `${d.getFullYear()}${p2(d.getMonth()+1)}${p2(d.getDate())}`;
+const todayKey = () => fmtDateKey(new Date());
+const isoToday = () => { const d=new Date(); return `${d.getFullYear()}-${p2(d.getMonth()+1)}-${p2(d.getDate())}`; };
+const weekKey  = d => { const t=new Date(d); t.setHours(0,0,0,0); t.setDate(t.getDate()-t.getDay()); return fmtDateKey(t); };
 const monthKey = d => `${d.getFullYear()}${p2(d.getMonth()+1)}`;
 const nowStr   = () => new Date().toLocaleString('en-MY',{day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'});
+const dateKeyFromIso = iso => iso ? iso.replace(/-/g,'') : todayKey();
+const isoFromDateKey = dk => `${dk.slice(0,4)}-${dk.slice(4,6)}-${dk.slice(6,8)}`;
+const dayKeyOffset = offset => { const d=new Date(); d.setDate(d.getDate()+offset); return fmtDateKey(d); };
+const isSoldOut = name => (S.soldout || []).includes(name);
 
-function genId() {
-  const dk = todayKey();
+function genId(dateKey) {
+  const dk = dateKey || todayKey();
   const n  = orders.filter(o => o.date === dk).length + 1;
   return `${dk}-${String(n).padStart(3,'0')}`;
 }
@@ -471,6 +532,7 @@ function loadLocal() {
   try {
     const o = localStorage.getItem('hk_orders');    if(o) orders = JSON.parse(o);
     const s = localStorage.getItem('hk_settings');  if(s) S      = JSON.parse(s);
+    if(!S.soldout) S.soldout = [];
   } catch(e){}
 }
 
@@ -488,6 +550,7 @@ async function syncAll() {
     // Pull settings
     const { data: remoteSettings } = await db.from('settings').select('*').single();
     if(remoteSettings) S = remoteSettings.data;
+    if(!S.soldout) S.soldout = [];
     saveLocal();
     renderCurrentScreen();
     showToast('✅ Synced!');
@@ -546,6 +609,7 @@ function openNewOrder() {
   editId = null;
   document.getElementById('modal-title').textContent = 'New order';
   document.getElementById('o-name').value     = '';
+  document.getElementById('o-date').value     = isoToday();
   document.getElementById('o-time').value     = '';
   document.getElementById('o-discount').value = '';
   document.getElementById('menu-items-container').innerHTML = '';
@@ -561,8 +625,12 @@ function addMenuItem(data) {
   const div = document.createElement('div');
   div.className = 'menu-block';
 
-  const cktOpts   = S.ckt.map(x => `<option value="${x.name}" ${data&&data.ckt===x.name?'selected':''}>${x.name} — RM${x.price.toFixed(2)}</option>`).join('');
-  const addonHtml = S.addon.map(x => `<div class="addon-chip ${data&&data.addons&&data.addons.includes(x.name)?'sel':''}" onclick="toggleAddon(this)" data-addon="${x.name}">${x.name}${x.price>0?' <span style=\'font-size:10px\'>+RM'+x.price.toFixed(2)+'</span>':''}</div>`).join('');
+  const cktOpts   = S.ckt.map(x => `<option value="${x.name}" ${data&&data.ckt===x.name?'selected':''}>${x.name} — RM${x.price.toFixed(2)}${isSoldOut(x.name)?' 🚫 sold out':''}</option>`).join('');
+  const addonHtml = S.addon.map(x => {
+    const so  = isSoldOut(x.name);
+    const sel = data && data.addons && data.addons.includes(x.name);
+    return `<div class="addon-chip ${sel?'sel':''} ${so?'soldout':''}" onclick="toggleAddon(this)" data-addon="${x.name}" ${so?'data-soldout="1"':''}>${x.name}${x.price>0?` <span style='font-size:10px'>+RM${x.price.toFixed(2)}</span>`:''}${so?' 🚫':''}</div>`;
+  }).join('');
 
   div.innerHTML = `
     <div class="menu-block-header">
@@ -598,7 +666,11 @@ function chgQty(btn, d) {
   updatePreview();
 }
 
-function toggleAddon(el) { el.classList.toggle('sel'); updatePreview(); }
+function toggleAddon(el) {
+  if(el.dataset.soldout === '1') { showToast('🚫 This item is sold out'); return; }
+  el.classList.toggle('sel');
+  updatePreview();
+}
 
 function collectItems() {
   return [...document.querySelectorAll('.menu-block')].map(b => {
@@ -632,25 +704,28 @@ function updatePreview() {
 }
 
 async function saveOrder() {
-  const name = document.getElementById('o-name').value.trim();
-  const time = document.getElementById('o-time').value;
-  const disc = parseFloat(document.getElementById('o-discount').value) || 0;
+  const name   = document.getElementById('o-name').value.trim();
+  const dateIso = document.getElementById('o-date').value;
+  const time   = document.getElementById('o-time').value;
+  const disc   = parseFloat(document.getElementById('o-discount').value) || 0;
   if(!name) { showToast('⚠️ Enter customer name'); return; }
+  if(!dateIso) { showToast('⚠️ Select collection date'); return; }
   if(!time) { showToast('⚠️ Enter collection time'); return; }
   const items = collectItems();
   if(!items.length) { showToast('⚠️ Add at least one item'); return; }
-  const d     = new Date();
-  const total = calcTotal(items, disc);
+  const dateKey = dateKeyFromIso(dateIso);
+  const d       = new Date(dateIso);
+  const total   = calcTotal(items, disc);
   if(editId) {
     const o = orders.find(x => x.id === editId);
-    Object.assign(o, { name, time, items, discount: disc, total });
+    Object.assign(o, { name, time, date: dateKey, items, discount: disc, total, week: weekKey(d), month: monthKey(d) });
     await pushOrder(o);
     showToast('✅ Order updated');
   } else {
     const order = {
-      id: genId(), name, time, items, discount: disc, total,
+      id: genId(dateKey), name, time, items, discount: disc, total,
       status: 'In queue', paid: 'unpaid', payMethod: '', amountPaid: 0,
-      timestamp: nowStr(), date: todayKey(), week: weekKey(d), month: monthKey(d)
+      timestamp: nowStr(), date: dateKey, week: weekKey(d), month: monthKey(d)
     };
     orders.unshift(order);
     await pushOrder(order);
@@ -672,10 +747,17 @@ function filterOrders(f, btn) {
   renderOrders();
 }
 
+function dateLabel(dateKey) {
+  if(dateKey === todayKey()) return 'Today';
+  if(dateKey === dayKeyOffset(-1)) return 'Yesterday';
+  if(dateKey === dayKeyOffset(1)) return 'Tomorrow';
+  return isoFromDateKey(dateKey);
+}
+
 function renderOrders() {
   const el   = document.getElementById('orders-list');
   let   list = orders.filter(o => orderFilter==='all' || o.paid===orderFilter);
-  list = [...list].sort((a,b) => b.id.localeCompare(a.id));
+  list = [...list].sort((a,b) => (b.date+b.time).localeCompare(a.date+a.time));
   if(!list.length) {
     el.innerHTML = `<div class="empty-state"><i class="fa-solid fa-clipboard"></i>No orders yet.<br>Tap <strong>New order</strong> to start.</div>`;
     return;
@@ -686,7 +768,7 @@ function renderOrders() {
         <div>
           <div class="order-id">${o.id}</div>
           <div class="order-name">${o.name}</div>
-          <div class="order-meta"><i class="fa-solid fa-clock" style="font-size:11px"></i> ${o.time} &nbsp;<span class="badge badge-${o.status==='Done'?'done':'queue'}">${o.status}</span></div>
+          <div class="order-meta"><i class="fa-solid fa-calendar" style="font-size:11px"></i> ${dateLabel(o.date)} · ${o.time} &nbsp;<span class="badge badge-${o.status==='Done'?'done':'queue'}">${o.status}</span></div>
         </div>
         ${payBadge(o)}
       </div>
@@ -706,6 +788,7 @@ function editOrder(id) {
   editId  = id;
   document.getElementById('modal-title').textContent = 'Edit order';
   document.getElementById('o-name').value     = o.name;
+  document.getElementById('o-date').value     = isoFromDateKey(o.date);
   document.getElementById('o-time').value     = o.time;
   document.getElementById('o-discount').value = o.discount || '';
   document.getElementById('menu-items-container').innerHTML = '';
@@ -739,14 +822,14 @@ async function clearTodayOrders() {
 function renderPayment() {
   const el = document.getElementById('payment-list');
   if(!orders.length) { el.innerHTML = `<div class="empty-state"><i class="fa-solid fa-credit-card"></i>No orders yet</div>`; return; }
-  const sorted = [...orders].sort((a,b) => a.time.localeCompare(b.time));
+  const sorted = [...orders].sort((a,b) => (b.date+b.time).localeCompare(a.date+a.time));
   el.innerHTML = sorted.map(o => `
     <div class="card">
       <div style="display:flex;justify-content:space-between;align-items:flex-start">
         <div>
           <div class="order-id">${o.id}</div>
           <div class="order-name">${o.name}</div>
-          <div class="order-meta"><i class="fa-solid fa-clock" style="font-size:11px"></i> ${o.time}</div>
+          <div class="order-meta"><i class="fa-solid fa-clock" style="font-size:11px"></i> ${dateLabel(o.date)} · ${o.time}</div>
         </div>
         ${payBadge(o)}
       </div>
@@ -815,12 +898,45 @@ async function savePayment() {
 /* ═══════════════════════════════════════════════════
    CHEF SCREEN
    ═══════════════════════════════════════════════════ */
+function setChefDay(day, btn) {
+  chefDay = day;
+  document.querySelectorAll('.chef-day-tab').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  renderChef();
+}
+
+function renderSoldOutPanel() {
+  document.getElementById('soldout-ckt').innerHTML = S.ckt.map(x => `
+    <div class="soldout-chip ${isSoldOut(x.name)?'out':''}" onclick="toggleSoldOut('${x.name}')">
+      <span>${x.name}</span>
+      ${isSoldOut(x.name) ? '<i class="fa-solid fa-ban" style="font-size:11px"></i>' : '<i class="fa-solid fa-check" style="font-size:11px;color:#10B981"></i>'}
+    </div>`).join('');
+  document.getElementById('soldout-addon').innerHTML = S.addon.map(x => `
+    <div class="soldout-chip ${isSoldOut(x.name)?'out':''}" onclick="toggleSoldOut('${x.name}')">
+      <span>${x.name}</span>
+      ${isSoldOut(x.name) ? '<i class="fa-solid fa-ban" style="font-size:11px"></i>' : '<i class="fa-solid fa-check" style="font-size:11px;color:#10B981"></i>'}
+    </div>`).join('');
+}
+
+async function toggleSoldOut(name) {
+  if(!S.soldout) S.soldout = [];
+  const idx = S.soldout.indexOf(name);
+  if(idx >= 0) S.soldout.splice(idx, 1); else S.soldout.push(name);
+  await pushSettings();
+  renderSoldOutPanel();
+  renderSettings();
+  showToast(idx >= 0 ? `✅ ${name} restocked` : `🚫 ${name} marked sold out`);
+}
+
 function renderChef() {
+  renderSoldOutPanel();
+  const targetKey = chefDay === 'today' ? todayKey() : chefDay === 'yesterday' ? dayKeyOffset(-1) : dayKeyOffset(1);
+  const list    = orders.filter(o => o.date === targetKey);
   const el      = document.getElementById('chef-list');
-  const pending = orders.filter(o => o.status !== 'Done').length;
+  const pending = list.filter(o => o.status !== 'Done').length;
   document.getElementById('chef-count').textContent = `${pending} pending`;
-  const sorted  = [...orders].sort((a,b) => a.time.localeCompare(b.time));
-  if(!sorted.length) { el.innerHTML = `<div class="empty-state"><i class="fa-solid fa-utensils"></i>No orders yet</div>`; return; }
+  const sorted  = [...list].sort((a,b) => a.time.localeCompare(b.time));
+  if(!sorted.length) { el.innerHTML = `<div class="empty-state"><i class="fa-solid fa-fire-burner"></i>No orders for this day</div>`; return; }
   el.innerHTML  = sorted.map(o => `
     <div class="card card-chef ${o.status==='Done'?'done':''}">
       <div style="display:flex;justify-content:space-between;align-items:flex-start">
@@ -853,13 +969,31 @@ function getFiltered() {
   const d = new Date();
   if(reportPeriod === 'daily')   return orders.filter(o => o.date  === todayKey());
   if(reportPeriod === 'weekly')  return orders.filter(o => o.week  === weekKey(d));
-  return orders.filter(o => o.month === monthKey(d));
+  if(reportPeriod === 'monthly') return orders.filter(o => o.month === monthKey(d));
+  if(reportPeriod === 'custom') {
+    const fromEl = document.getElementById('report-from');
+    const toEl   = document.getElementById('report-to');
+    const from   = dateKeyFromIso(fromEl ? fromEl.value : '');
+    const to     = dateKeyFromIso(toEl ? toEl.value : '');
+    return orders.filter(o => o.date >= from && o.date <= to);
+  }
+  return orders;
 }
 
 function setPeriod(p, btn) {
   reportPeriod = p;
   document.querySelectorAll('.period-tab').forEach(b => b.classList.remove('active'));
   btn.classList.add('active');
+  const picker = document.getElementById('report-date-picker');
+  if(p === 'custom') {
+    picker.style.display = 'flex';
+    if(!document.getElementById('report-from').value) {
+      document.getElementById('report-from').value = isoToday();
+      document.getElementById('report-to').value   = isoToday();
+    }
+  } else {
+    picker.style.display = 'none';
+  }
   renderReport();
 }
 
@@ -874,7 +1008,7 @@ function renderReport() {
   list.forEach(o => o.items.forEach(i => { cktCount[i.ckt] = (cktCount[i.ckt]||0) + (i.qty||1); }));
   const top3   = Object.entries(cktCount).sort((a,b) => b[1]-a[1]).slice(0,3);
   const maxC   = top3.length ? top3[0][1] : 1;
-  const sorted = [...list].sort((a,b) => a.time.localeCompare(b.time));
+  const sorted = [...list].sort((a,b) => (a.date+a.time).localeCompare(b.date+b.time));
 
   document.getElementById('report-content').innerHTML = `
     <div class="metric-grid">
@@ -901,10 +1035,10 @@ function renderReport() {
     <div class="section-label">Chef cooking list</div>
     <div class="rtable-wrap">
       <table class="rtable">
-        <thead><tr><th>Order ID</th><th>Name</th><th>Time</th><th>Items</th><th>Status</th></tr></thead>
+        <thead><tr><th>Order ID</th><th>Name</th><th>Date</th><th>Time</th><th>Items</th><th>Status</th></tr></thead>
         <tbody>${sorted.length
-          ? sorted.map(o=>`<tr><td>${o.id}</td><td>${o.name}</td><td><strong>${o.time}</strong></td><td>${o.items.map(i=>i.ckt+(i.qty>1?' ×'+i.qty:'')+(i.addons&&i.addons.length?' +'+i.addons.join(', '):'')+(i.remark?' ('+i.remark+')':'')).join('<br>')}</td><td>${o.status}</td></tr>`).join('')
-          : `<tr><td colspan="5" style="color:var(--muted)">No orders</td></tr>`}
+          ? sorted.map(o=>`<tr><td>${o.id}</td><td>${o.name}</td><td>${isoFromDateKey(o.date)}</td><td><strong>${o.time}</strong></td><td>${o.items.map(i=>i.ckt+(i.qty>1?' ×'+i.qty:'')+(i.addons&&i.addons.length?' +'+i.addons.join(', '):'')+(i.remark?' ('+i.remark+')':'')).join('<br>')}</td><td>${o.status}</td></tr>`).join('')
+          : `<tr><td colspan="6" style="color:var(--muted)">No orders</td></tr>`}
         </tbody>
       </table>
     </div>
@@ -912,10 +1046,10 @@ function renderReport() {
     <div class="section-label">Full order record</div>
     <div class="rtable-wrap">
       <table class="rtable">
-        <thead><tr><th>ID</th><th>Name</th><th>Time</th><th>Total</th><th>Payment</th><th>Status</th></tr></thead>
+        <thead><tr><th>ID</th><th>Name</th><th>Date</th><th>Time</th><th>Total</th><th>Payment</th><th>Status</th></tr></thead>
         <tbody>${list.length
-          ? sorted.map(o=>`<tr><td>${o.id}</td><td>${o.name}</td><td>${o.time}</td><td>RM${o.total.toFixed(2)}</td><td>${o.paid==='paid'?'Paid · '+o.payMethod:o.paid==='partial'?'Partial · RM'+o.amountPaid.toFixed(2):'Unpaid'}</td><td>${o.status}</td></tr>`).join('')
-          : `<tr><td colspan="6" style="color:var(--muted)">No orders</td></tr>`}
+          ? sorted.map(o=>`<tr><td>${o.id}</td><td>${o.name}</td><td>${isoFromDateKey(o.date)}</td><td>${o.time}</td><td>RM${o.total.toFixed(2)}</td><td>${o.paid==='paid'?'Paid · '+o.payMethod:o.paid==='partial'?'Partial · RM'+o.amountPaid.toFixed(2):'Unpaid'}</td><td>${o.status}</td></tr>`).join('')
+          : `<tr><td colspan="7" style="color:var(--muted)">No orders</td></tr>`}
         </tbody>
       </table>
     </div>`;
@@ -923,14 +1057,14 @@ function renderReport() {
 
 function printReport() {
   const list        = getFiltered();
-  const periodLabel = reportPeriod==='daily'?'Today':reportPeriod==='weekly'?'This week':'This month';
+  const periodLabel = reportPeriod==='daily'?'Today':reportPeriod==='weekly'?'This week':reportPeriod==='monthly'?'This month':`${document.getElementById('report-from').value} to ${document.getElementById('report-to').value}`;
   const revenue     = list.filter(o=>o.paid!=='unpaid').reduce((s,o)=>s+(o.amountPaid||0),0);
   const outstanding = list.reduce((s,o)=>s+(o.total-(o.amountPaid||0)),0);
   const byMethod    = {};
   list.filter(o=>o.paid!=='unpaid').forEach(o=>{byMethod[o.payMethod]=(byMethod[o.payMethod]||0)+(o.amountPaid||0)});
   const cktCount={};list.forEach(o=>o.items.forEach(i=>{cktCount[i.ckt]=(cktCount[i.ckt]||0)+(i.qty||1)}));
   const top3   = Object.entries(cktCount).sort((a,b)=>b[1]-a[1]).slice(0,3);
-  const sorted = [...list].sort((a,b)=>a.time.localeCompare(b.time));
+  const sorted = [...list].sort((a,b)=>(a.date+a.time).localeCompare(b.date+b.time));
   const date   = new Date().toLocaleDateString('en-MY',{day:'2-digit',month:'long',year:'numeric'});
 
   const w = window.open('','_blank');
@@ -967,13 +1101,13 @@ function printReport() {
   <table><thead><tr><th>Rank</th><th>Item</th><th>Portions</th></tr></thead><tbody>
   ${top3.map(([n,c],i)=>`<tr><td>${['1st','2nd','3rd'][i]}</td><td>${n}</td><td>${c}</td></tr>`).join('')||'<tr><td colspan="3">No data</td></tr>'}
   </tbody></table>
-  <h2>Chef cooking list (sorted by collection time)</h2>
-  <table><thead><tr><th>Order ID</th><th>Customer</th><th>Collect at</th><th>Items & remarks</th><th>Status</th></tr></thead><tbody>
-  ${sorted.map(o=>`<tr><td>${o.id}</td><td>${o.name}</td><td><strong>${o.time}</strong></td><td>${o.items.map((i,n)=>`${n+1}. ${i.ckt}${i.qty>1?' ×'+i.qty:''}${i.addons&&i.addons.length?' + '+i.addons.join(', '):''}${i.remark?' ('+i.remark+')':''}`).join('<br>')}</td><td><span class="${o.status==='Done'?'bp':'bq'}">${o.status}</span></td></tr>`).join('')||'<tr><td colspan="5">No orders</td></tr>'}
+  <h2>Chef cooking list (sorted by date & collection time)</h2>
+  <table><thead><tr><th>Order ID</th><th>Customer</th><th>Date</th><th>Collect at</th><th>Items & remarks</th><th>Status</th></tr></thead><tbody>
+  ${sorted.map(o=>`<tr><td>${o.id}</td><td>${o.name}</td><td>${isoFromDateKey(o.date)}</td><td><strong>${o.time}</strong></td><td>${o.items.map((i,n)=>`${n+1}. ${i.ckt}${i.qty>1?' ×'+i.qty:''}${i.addons&&i.addons.length?' + '+i.addons.join(', '):''}${i.remark?' ('+i.remark+')':''}`).join('<br>')}</td><td><span class="${o.status==='Done'?'bp':'bq'}">${o.status}</span></td></tr>`).join('')||'<tr><td colspan="6">No orders</td></tr>'}
   </tbody></table>
   <h2>Full order record</h2>
-  <table><thead><tr><th>Order ID</th><th>Customer</th><th>Time</th><th>Items</th><th>Total</th><th>Disc</th><th>Payment</th><th>Ordered at</th><th>Status</th></tr></thead><tbody>
-  ${sorted.map(o=>`<tr><td>${o.id}</td><td>${o.name}</td><td>${o.time}</td><td>${o.items.map(i=>i.ckt+(i.qty>1?' ×'+i.qty:'')).join(', ')}</td><td>RM${o.total.toFixed(2)}</td><td>${o.discount>0?'RM'+o.discount.toFixed(2):'-'}</td><td><span class="${o.paid==='paid'?'bp':o.paid==='partial'?'bpa':'bu'}">${o.paid==='paid'?'Paid · '+o.payMethod:o.paid==='partial'?'Partial · RM'+o.amountPaid.toFixed(2):'Unpaid'}</span></td><td>${o.timestamp}</td><td><span class="${o.status==='Done'?'bp':'bq'}">${o.status}</span></td></tr>`).join('')||'<tr><td colspan="9">No orders</td></tr>'}
+  <table><thead><tr><th>Order ID</th><th>Customer</th><th>Date</th><th>Time</th><th>Items</th><th>Total</th><th>Disc</th><th>Payment</th><th>Status</th></tr></thead><tbody>
+  ${sorted.map(o=>`<tr><td>${o.id}</td><td>${o.name}</td><td>${isoFromDateKey(o.date)}</td><td>${o.time}</td><td>${o.items.map(i=>i.ckt+(i.qty>1?' ×'+i.qty:'')).join(', ')}</td><td>RM${o.total.toFixed(2)}</td><td>${o.discount>0?'RM'+o.discount.toFixed(2):'-'}</td><td><span class="${o.paid==='paid'?'bp':o.paid==='partial'?'bpa':'bu'}">${o.paid==='paid'?'Paid · '+o.payMethod:o.paid==='partial'?'Partial · RM'+o.amountPaid.toFixed(2):'Unpaid'}</span></td><td><span class="${o.status==='Done'?'bp':'bq'}">${o.status}</span></td></tr>`).join('')||'<tr><td colspan="9">No orders</td></tr>'}
   </tbody></table>
   </body></html>`);
   w.document.close(); w.focus(); setTimeout(() => w.print(), 600);
@@ -984,13 +1118,37 @@ function printReport() {
    ═══════════════════════════════════════════════════ */
 function renderSettings() {
   document.getElementById('tag-ckt').innerHTML = S.ckt.map((t,i) =>
-    `<span class="tag">${t.name} <span class="tag-price">RM${t.price.toFixed(2)}</span><button class="tag-del" onclick="removeCkt(${i})" title="Remove"><i class="fa-solid fa-xmark"></i></button></span>`).join('');
+    `<span class="tag ${isSoldOut(t.name)?'soldout-tag':''}">${t.name} <span class="tag-price">RM${t.price.toFixed(2)}</span>${isSoldOut(t.name)?' <span style="font-size:10px">🚫</span>':''}<button class="tag-del" onclick="removeCkt(${i})" title="Remove"><i class="fa-solid fa-xmark"></i></button></span>`).join('');
   document.getElementById('tag-addon').innerHTML = S.addon.map((t,i) =>
-    `<span class="tag">${t.name} <span class="tag-price">${t.price>0?'RM'+t.price.toFixed(2):'free'}</span><button class="tag-del" onclick="removeAddon(${i})" title="Remove"><i class="fa-solid fa-xmark"></i></button></span>`).join('');
+    `<span class="tag ${isSoldOut(t.name)?'soldout-tag':''}">${t.name} <span class="tag-price">${t.price>0?'RM'+t.price.toFixed(2):'free'}</span>${isSoldOut(t.name)?' <span style="font-size:10px">🚫</span>':''}<button class="tag-del" onclick="removeAddon(${i})" title="Remove"><i class="fa-solid fa-xmark"></i></button></span>`).join('');
+
+  const soldOutList = S.soldout || [];
+  const restockEl = document.getElementById('tag-restock');
+  const emptyEl   = document.getElementById('restock-empty');
+  if(soldOutList.length) {
+    restockEl.innerHTML = soldOutList.map(name =>
+      `<span class="tag soldout-tag">${name} 🚫<button class="tag-del" onclick="restockItem('${name}')" title="Restock"><i class="fa-solid fa-xmark"></i></button></span>`).join('');
+    restockEl.style.display = 'flex';
+    emptyEl.style.display   = 'none';
+  } else {
+    restockEl.innerHTML     = '';
+    restockEl.style.display = 'none';
+    emptyEl.style.display   = 'block';
+  }
+
   ['payment','status'].forEach(type => {
     document.getElementById('tag-'+type).innerHTML = S[type].map((t,i) =>
       `<span class="tag">${t}<button class="tag-del" onclick="removeSimpleTag('${type}',${i})" title="Remove"><i class="fa-solid fa-xmark"></i></button></span>`).join('');
   });
+}
+
+async function restockItem(name) {
+  if(!S.soldout) S.soldout = [];
+  S.soldout = S.soldout.filter(x => x !== name);
+  await pushSettings();
+  renderSettings();
+  renderSoldOutPanel();
+  showToast(`✅ ${name} restocked`);
 }
 
 async function addCkt() {
@@ -1029,6 +1187,15 @@ async function removeSimpleTag(type, i) { S[type].splice(i,1); await pushSetting
    ═══════════════════════════════════════════════════ */
 window.addEventListener('online',  () => { document.getElementById('offline-banner').classList.remove('show'); syncAll(); });
 window.addEventListener('offline', () => { document.getElementById('offline-banner').classList.add('show'); });
+
+/* ═══════════════════════════════════════════════════
+   AUTH / LOGOUT
+   ═══════════════════════════════════════════════════ */
+function doLogout() {
+  if(!confirm('Log out of 0101 Hot Kitchen?')) return;
+  sessionStorage.removeItem('hk_user');
+  window.location.href = 'login.html';
+}
 
 /* ═══════════════════════════════════════════════════
    INIT

@@ -1,0 +1,314 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>0101 Hot Kitchen — Admin</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+<script>
+  const SUPABASE_URL = 'YOUR_SUPABASE_URL';
+  const SUPABASE_KEY = 'YOUR_SUPABASE_ANON_KEY';
+</script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --night:#1A0A00;--dark:#2C1810;--ember:#854F0B;--gold:#BA7517;--flame:#EF9F27;
+  --cream:#FDF6EE;--border:#E8D5B0;--muted:#7A5C3A;--text:#2C1810;--danger:#A32D2D;
+  --success-bg:#D1FAE5;--success-fg:#065F46;--warn-bg:#FEF3C7;--warn-fg:#854F0B;
+}
+html,body{min-height:100%;background:var(--cream);font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;color:var(--text)}
+.topbar{background:var(--night);padding:14px 18px;display:flex;align-items:center;gap:12px}
+.topbar-title{color:#fff;font-size:16px;font-weight:600}
+.topbar-sub{color:var(--flame);font-size:11px}
+.logout-btn{margin-left:auto;background:none;border:1px solid rgba(255,255,255,.3);color:#fff;padding:6px 12px;border-radius:6px;font-size:12px;cursor:pointer}
+.container{max-width:720px;margin:0 auto;padding:20px 16px 60px}
+.card{background:#fff;border:0.5px solid var(--border);border-radius:14px;padding:18px;margin-bottom:16px}
+h2{font-size:16px;color:var(--dark);margin-bottom:4px}
+.sub{font-size:12px;color:var(--muted);margin-bottom:16px}
+label{font-size:12px;color:var(--muted);display:block;margin-bottom:5px;margin-top:12px}
+label:first-of-type{margin-top:0}
+input{width:100%;padding:9px 11px;border:0.5px solid var(--border);border-radius:8px;font-size:13px;background:#fff;color:var(--text)}
+input:focus{outline:none;border-color:var(--gold)}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.btn{padding:9px 16px;border-radius:8px;border:1px solid var(--gold);background:var(--gold);color:#fff;font-size:13px;font-weight:600;cursor:pointer;display:inline-flex;align-items:center;gap:6px}
+.btn:active{background:var(--ember)}
+.btn-full{width:100%;justify-content:center;margin-top:14px}
+.btn-sm{padding:6px 11px;font-size:12px}
+.btn-outline{background:transparent;color:var(--ember)}
+.btn-danger{background:transparent;border-color:#E5A0A0;color:var(--danger)}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th{text-align:left;padding:8px 6px;color:var(--ember);font-weight:600;border-bottom:1px solid var(--border);font-size:11px;text-transform:uppercase}
+td{padding:10px 6px;border-bottom:0.5px solid var(--border);vertical-align:middle}
+.badge{display:inline-block;padding:3px 8px;border-radius:20px;font-size:10px;font-weight:600}
+.badge-active{background:var(--success-bg);color:var(--success-fg)}
+.badge-expired{background:#FEE2E2;color:var(--danger)}
+.badge-inactive{background:#F3F4F6;color:#6B7280}
+.badge-temp{background:var(--warn-bg);color:var(--warn-fg)}
+.action-icons{display:flex;gap:6px}
+.icon-btn{background:none;border:none;color:var(--muted);cursor:pointer;font-size:14px;padding:4px}
+.icon-btn:hover{color:var(--gold)}
+.icon-btn.danger:hover{color:var(--danger)}
+.login-wrap{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px;background:var(--night)}
+.login-card{background:#fff;border-radius:16px;padding:26px 22px;width:100%;max-width:340px}
+.login-card h2{margin-bottom:4px}
+.toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(20px);background:var(--dark);color:#fff;padding:9px 18px;border-radius:20px;font-size:13px;opacity:0;transition:all .3s;z-index:999;pointer-events:none;white-space:nowrap}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+.error-box{background:#FEF2F2;border:0.5px solid #FECACA;color:var(--danger);font-size:12px;padding:9px 11px;border-radius:8px;margin-top:12px;display:none}
+.error-box.show{display:block}
+.modal-bg{display:none;position:fixed;inset:0;background:rgba(26,10,0,.6);z-index:200;align-items:center;justify-content:center;padding:16px}
+.modal-bg.open{display:flex}
+.modal{background:#fff;border-radius:14px;padding:20px;width:100%;max-width:340px}
+.modal h3{font-size:15px;margin-bottom:10px;color:var(--dark)}
+.temp-pw-display{background:var(--cream);border:1px dashed var(--gold);border-radius:8px;padding:14px;text-align:center;margin-top:10px}
+.temp-pw-val{font-size:22px;font-weight:700;color:var(--gold);letter-spacing:1px;margin-top:4px}
+.empty-state{text-align:center;padding:30px;color:var(--muted);font-size:13px}
+</style>
+</head>
+<body>
+
+<div class="toast" id="toast"></div>
+
+<!-- ADMIN LOGIN -->
+<div class="login-wrap" id="admin-login-wrap">
+  <div class="login-card">
+    <h2>0101 Hot Kitchen</h2>
+    <div class="sub" style="color:var(--muted);font-size:12px;margin-bottom:16px">Admin panel login</div>
+    <label>Username</label>
+    <input id="admin-username" placeholder="admin">
+    <label>Password</label>
+    <input id="admin-password" type="password" placeholder="••••••••">
+    <div class="error-box" id="admin-login-error"></div>
+    <button class="btn btn-full" onclick="adminLogin()"><i class="fa-solid fa-right-to-bracket"></i> Sign in</button>
+  </div>
+</div>
+
+<!-- ADMIN DASHBOARD -->
+<div id="admin-dashboard" style="display:none">
+  <div class="topbar">
+    <div>
+      <div class="topbar-title">0101 Hot Kitchen</div>
+      <div class="topbar-sub">Admin Panel</div>
+    </div>
+    <button class="logout-btn" onclick="adminLogout()">Log out</button>
+  </div>
+
+  <div class="container">
+    <div class="card">
+      <h2>Create new user</h2>
+      <div class="sub">New users log in with the temporary password, then set their own.</div>
+      <div class="row2">
+        <div>
+          <label>Username</label>
+          <input id="new-username" placeholder="e.g. chef1">
+        </div>
+        <div>
+          <label>Expiry date (optional)</label>
+          <input id="new-expiry" type="date">
+        </div>
+      </div>
+      <button class="btn btn-full" onclick="createUser()"><i class="fa-solid fa-user-plus"></i> Create user</button>
+    </div>
+
+    <div class="card">
+      <h2>All users</h2>
+      <div class="sub">Manage login access for 0101 Hot Kitchen system</div>
+      <div id="users-table-wrap"></div>
+    </div>
+  </div>
+</div>
+
+<!-- TEMP PASSWORD MODAL -->
+<div class="modal-bg" id="modal-temp-pw">
+  <div class="modal">
+    <h3 id="temp-pw-title">User created</h3>
+    <p style="font-size:12px;color:var(--muted)">Share this temporary password with the user. They'll be asked to set a new one on first login.</p>
+    <div class="temp-pw-display">
+      <div style="font-size:11px;color:var(--muted)">Temporary password</div>
+      <div class="temp-pw-val" id="temp-pw-value"></div>
+    </div>
+    <button class="btn btn-full" onclick="closeTempPwModal()">Done</button>
+  </div>
+</div>
+
+<!-- EDIT EXPIRY MODAL -->
+<div class="modal-bg" id="modal-edit-expiry">
+  <div class="modal">
+    <h3>Update expiry date</h3>
+    <label>Expiry date (leave blank = never expires)</label>
+    <input id="edit-expiry-date" type="date">
+    <div style="display:flex;gap:8px;margin-top:14px">
+      <button class="btn btn-outline" style="flex:1;background:transparent" onclick="closeModal('modal-edit-expiry')">Cancel</button>
+      <button class="btn" style="flex:1;justify-content:center" onclick="saveExpiry()">Save</button>
+    </div>
+  </div>
+</div>
+
+<script>
+let db = null;
+try { if(SUPABASE_URL !== 'YOUR_SUPABASE_URL') db = supabase.createClient(SUPABASE_URL, SUPABASE_KEY); } catch(e){}
+
+const ADMIN_USERNAME='admin';
+const ADMIN_PASSWORD='system@dmin0101';
+let users=[];
+let editingUserId=null;
+
+function showToast(msg){
+  const el=document.getElementById('toast');el.textContent=msg;el.classList.add('show');
+  setTimeout(()=>el.classList.remove('show'),2500);
+}
+function closeModal(id){document.getElementById(id).classList.remove('open');}
+function todayIso(){const d=new Date();return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;}
+
+function adminLogin(){
+  const u=document.getElementById('admin-username').value.trim();
+  const p=document.getElementById('admin-password').value;
+  const errEl=document.getElementById('admin-login-error');
+  errEl.classList.remove('show');
+  if(u===ADMIN_USERNAME && p===ADMIN_PASSWORD){
+    sessionStorage.setItem('hk_admin','true');
+    document.getElementById('admin-login-wrap').style.display='none';
+    document.getElementById('admin-dashboard').style.display='block';
+    loadUsers();
+  } else {
+    errEl.textContent='Invalid admin credentials';
+    errEl.classList.add('show');
+  }
+}
+function adminLogout(){
+  sessionStorage.removeItem('hk_admin');
+  document.getElementById('admin-login-wrap').style.display='flex';
+  document.getElementById('admin-dashboard').style.display='none';
+  document.getElementById('admin-username').value='';
+  document.getElementById('admin-password').value='';
+}
+
+function genTempPassword(){
+  const chars='ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+  let pw='';
+  for(let i=0;i<8;i++) pw+=chars[Math.floor(Math.random()*chars.length)];
+  return pw;
+}
+
+async function loadUsers(){
+  if(!db){document.getElementById('users-table-wrap').innerHTML='<div class="empty-state">⚠️ Supabase not configured</div>';return;}
+  try{
+    const{data,error}=await db.from('users').select('*').order('created_at',{ascending:false});
+    if(error)throw error;
+    users=data||[];
+    renderUsers();
+  }catch(e){
+    console.error(e);
+    document.getElementById('users-table-wrap').innerHTML='<div class="empty-state">⚠️ Failed to load users</div>';
+  }
+}
+
+function userStatusBadge(u){
+  if(!u.active) return '<span class="badge badge-inactive">Inactive</span>';
+  if(u.expiry_date && u.expiry_date < todayIso()) return '<span class="badge badge-expired">Expired</span>';
+  if(u.must_change_pw) return '<span class="badge badge-temp">Temp password</span>';
+  return '<span class="badge badge-active">Active</span>';
+}
+
+function renderUsers(){
+  const el=document.getElementById('users-table-wrap');
+  if(!users.length){el.innerHTML='<div class="empty-state">No users yet. Create one above.</div>';return;}
+  el.innerHTML=`<table>
+    <thead><tr><th>Username</th><th>Status</th><th>Expiry</th><th>Last login</th><th></th></tr></thead>
+    <tbody>
+    ${users.map(u=>`
+      <tr>
+        <td><strong>${u.username}</strong></td>
+        <td>${userStatusBadge(u)}</td>
+        <td style="font-size:12px;color:var(--muted)">${u.expiry_date||'Never'}</td>
+        <td style="font-size:12px;color:var(--muted)">${u.last_login?new Date(u.last_login).toLocaleDateString('en-MY',{day:'2-digit',month:'short'}):'Never'}</td>
+        <td>
+          <div class="action-icons">
+            <button class="icon-btn" onclick="openEditExpiry('${u.id}','${u.expiry_date||''}')" title="Edit expiry"><i class="fa-solid fa-calendar"></i></button>
+            <button class="icon-btn" onclick="resetPassword('${u.id}','${u.username}')" title="Reset password"><i class="fa-solid fa-key"></i></button>
+            <button class="icon-btn" onclick="toggleActive('${u.id}',${u.active})" title="${u.active?'Deactivate':'Activate'}"><i class="fa-solid fa-${u.active?'lock':'lock-open'}"></i></button>
+            <button class="icon-btn danger" onclick="deleteUser('${u.id}','${u.username}')" title="Delete"><i class="fa-solid fa-trash"></i></button>
+          </div>
+        </td>
+      </tr>`).join('')}
+    </tbody>
+  </table>`;
+}
+
+async function createUser(){
+  const username=document.getElementById('new-username').value.trim();
+  const expiry=document.getElementById('new-expiry').value || null;
+  if(!username){showToast('⚠️ Enter a username');return;}
+  if(users.some(u=>u.username===username)){showToast('⚠️ Username already exists');return;}
+
+  const tempPw=genTempPassword();
+  try{
+    const{error}=await db.from('users').insert({username,password:tempPw,must_change_pw:true,expiry_date:expiry,active:true});
+    if(error)throw error;
+    document.getElementById('new-username').value='';
+    document.getElementById('new-expiry').value='';
+    document.getElementById('temp-pw-title').textContent=`User "${username}" created`;
+    document.getElementById('temp-pw-value').textContent=tempPw;
+    document.getElementById('modal-temp-pw').classList.add('open');
+    loadUsers();
+  }catch(e){
+    console.error(e);
+    showToast('⚠️ Failed to create user — username may already exist');
+  }
+}
+function closeTempPwModal(){closeModal('modal-temp-pw');}
+
+async function resetPassword(id,username){
+  if(!confirm(`Reset password for "${username}"? They'll need to use a new temporary password.`))return;
+  const tempPw=genTempPassword();
+  try{
+    await db.from('users').update({password:tempPw,must_change_pw:true}).eq('id',id);
+    document.getElementById('temp-pw-title').textContent=`Password reset for "${username}"`;
+    document.getElementById('temp-pw-value').textContent=tempPw;
+    document.getElementById('modal-temp-pw').classList.add('open');
+    loadUsers();
+  }catch(e){showToast('⚠️ Failed to reset password');}
+}
+
+async function toggleActive(id,currentActive){
+  try{
+    await db.from('users').update({active:!currentActive}).eq('id',id);
+    showToast(currentActive?'🔒 User deactivated':'🔓 User activated');
+    loadUsers();
+  }catch(e){showToast('⚠️ Failed to update');}
+}
+
+async function deleteUser(id,username){
+  if(!confirm(`Delete user "${username}" permanently? This cannot be undone.`))return;
+  try{
+    await db.from('users').delete().eq('id',id);
+    showToast('🗑️ User deleted');
+    loadUsers();
+  }catch(e){showToast('⚠️ Failed to delete');}
+}
+
+function openEditExpiry(id,currentExpiry){
+  editingUserId=id;
+  document.getElementById('edit-expiry-date').value=currentExpiry;
+  document.getElementById('modal-edit-expiry').classList.add('open');
+}
+async function saveExpiry(){
+  const expiry=document.getElementById('edit-expiry-date').value||null;
+  try{
+    await db.from('users').update({expiry_date:expiry}).eq('id',editingUserId);
+    showToast('✅ Expiry updated');
+    closeModal('modal-edit-expiry');
+    loadUsers();
+  }catch(e){showToast('⚠️ Failed to update expiry');}
+}
+
+// Auto-login if session exists
+if(sessionStorage.getItem('hk_admin')==='true'){
+  document.getElementById('admin-login-wrap').style.display='none';
+  document.getElementById('admin-dashboard').style.display='block';
+  loadUsers();
+}
+document.getElementById('admin-password').addEventListener('keypress', e=>{if(e.key==='Enter')adminLogin();});
+</script>
+</body>
+</html>

@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>0101 Hot Kitchen — Login</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+<script>
+  const SUPABASE_URL = 'YOUR_SUPABASE_URL';
+  const SUPABASE_KEY = 'YOUR_SUPABASE_ANON_KEY';
+</script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --night:#1A0A00;--dark:#2C1810;--ember:#854F0B;--gold:#BA7517;--flame:#EF9F27;
+  --cream:#FDF6EE;--border:#E8D5B0;--muted:#7A5C3A;--text:#2C1810;--danger:#A32D2D;
+}
+html,body{height:100%;background:var(--night);font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif}
+.wrap{min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px 20px}
+.logo-box{margin-bottom:20px}
+.brand{color:#fff;font-size:18px;font-weight:600;margin-bottom:4px;text-align:center}
+.brand-sub{color:var(--flame);font-size:12px;margin-bottom:28px;text-align:center}
+.card{background:#fff;border-radius:16px;padding:24px 22px;width:100%;max-width:360px;box-shadow:0 8px 32px rgba(0,0,0,.3)}
+.card h2{font-size:17px;color:var(--dark);margin-bottom:4px}
+.card .sub{font-size:12px;color:var(--muted);margin-bottom:18px}
+label{font-size:12px;color:var(--muted);display:block;margin-bottom:5px;margin-top:12px}
+label:first-of-type{margin-top:0}
+input{width:100%;padding:11px 12px;border:0.5px solid var(--border);border-radius:8px;font-size:14px;background:#fff;color:var(--text)}
+input:focus{outline:none;border-color:var(--gold);box-shadow:0 0 0 2px rgba(186,117,23,.12)}
+.pw-wrap{position:relative}
+.pw-toggle{position:absolute;right:10px;top:50%;transform:translateY(-50%);background:none;border:none;color:var(--muted);cursor:pointer;font-size:14px}
+.btn{width:100%;padding:12px;border-radius:8px;border:none;background:var(--gold);color:#fff;font-size:14px;font-weight:600;cursor:pointer;margin-top:18px;display:flex;align-items:center;justify-content:center;gap:8px}
+.btn:active{background:var(--ember)}
+.btn:disabled{opacity:.6;cursor:default}
+.error-box{background:#FEF2F2;border:0.5px solid #FECACA;color:var(--danger);font-size:12px;padding:9px 11px;border-radius:8px;margin-top:12px;display:none}
+.error-box.show{display:block}
+.info-box{background:#FFFBEB;border:0.5px solid #FDE68A;color:#92400E;font-size:12px;padding:9px 11px;border-radius:8px;margin-top:12px;display:none}
+.info-box.show{display:block}
+.footer-note{color:rgba(255,255,255,.4);font-size:11px;margin-top:24px;text-align:center}
+.spinner{width:14px;height:14px;border:2px solid rgba(255,255,255,.4);border-top-color:#fff;border-radius:50%;animation:spin .7s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.screen{display:none}
+.screen.active{display:block}
+.pw-rules{font-size:11px;color:var(--muted);margin-top:6px;line-height:1.5}
+</style>
+</head>
+<body>
+
+<div class="wrap">
+  <div class="logo-box">
+    <svg width="72" height="72" viewBox="0 0 72 72" fill="none">
+      <rect width="72" height="72" rx="14" fill="#412402"/>
+      <text x="36" y="27" text-anchor="middle" font-family="Arial,sans-serif" font-size="17" font-weight="900" fill="#EF9F27" letter-spacing="2">0101</text>
+      <line x1="16" y1="31" x2="56" y2="31" stroke="#BA7517" stroke-width="1"/>
+      <ellipse cx="36" cy="45" rx="14" ry="8" fill="none" stroke="#EF9F27" stroke-width="1.5"/>
+      <ellipse cx="36" cy="45" rx="8" ry="4" fill="#BA7517"/>
+      <path d="M30 37 Q30 29 36 26 Q42 29 42 37" fill="none" stroke="#E24B4A" stroke-width="1.5"/>
+      <path d="M33 34 Q33 28 36 26 Q39 28 39 34" fill="none" stroke="#EF9F27" stroke-width="1.5"/>
+      <text x="36" y="63" text-anchor="middle" font-family="Arial,sans-serif" font-size="6.5" font-weight="700" fill="#FAC775" letter-spacing="2">HOT KITCHEN</text>
+    </svg>
+  </div>
+  <div class="brand">0101 Hot Kitchen</div>
+  <div class="brand-sub">Order Management System</div>
+
+  <!-- LOGIN SCREEN -->
+  <div class="card screen active" id="screen-login">
+    <h2>Sign in</h2>
+    <div class="sub">Enter your username and password</div>
+    <label>Username</label>
+    <input id="login-username" autocomplete="username" placeholder="e.g. owner">
+    <label>Password</label>
+    <div class="pw-wrap">
+      <input id="login-password" type="password" autocomplete="current-password" placeholder="••••••••">
+      <button class="pw-toggle" onclick="togglePw('login-password',this)"><i class="fa-solid fa-eye"></i></button>
+    </div>
+    <div class="error-box" id="login-error"></div>
+    <button class="btn" id="login-btn" onclick="doLogin()"><i class="fa-solid fa-right-to-bracket"></i> Sign in</button>
+  </div>
+
+  <!-- FORCE CHANGE PASSWORD SCREEN -->
+  <div class="card screen" id="screen-change">
+    <h2>Set a new password</h2>
+    <div class="sub">You're using a temporary password. Please set your own password to continue.</div>
+    <label>New password</label>
+    <div class="pw-wrap">
+      <input id="new-password" type="password" placeholder="At least 6 characters">
+      <button class="pw-toggle" onclick="togglePw('new-password',this)"><i class="fa-solid fa-eye"></i></button>
+    </div>
+    <label>Confirm new password</label>
+    <div class="pw-wrap">
+      <input id="confirm-password" type="password" placeholder="Re-enter new password">
+      <button class="pw-toggle" onclick="togglePw('confirm-password',this)"><i class="fa-solid fa-eye"></i></button>
+    </div>
+    <div class="pw-rules">Password must be at least 6 characters.</div>
+    <div class="error-box" id="change-error"></div>
+    <button class="btn" id="change-btn" onclick="doChangePassword()"><i class="fa-solid fa-check"></i> Set password & continue</button>
+  </div>
+
+  <div class="footer-note">Forgot your password? Contact your admin for a reset.</div>
+</div>
+
+<script>
+let db = null;
+try { if(SUPABASE_URL !== 'YOUR_SUPABASE_URL') db = supabase.createClient(SUPABASE_URL, SUPABASE_KEY); } catch(e){}
+
+let pendingUser = null; // user record while forcing password change
+
+function showScreen(id){
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+}
+function togglePw(id,btn){
+  const el=document.getElementById(id);
+  const icon=btn.querySelector('i');
+  if(el.type==='password'){el.type='text';icon.className='fa-solid fa-eye-slash';}
+  else{el.type='password';icon.className='fa-solid fa-eye';}
+}
+function showError(id,msg){
+  const el=document.getElementById(id);
+  el.textContent=msg;el.classList.add('show');
+}
+function clearError(id){document.getElementById(id).classList.remove('show');}
+
+function todayIso(){const d=new Date();return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;}
+
+async function doLogin(){
+  clearError('login-error');
+  const username=document.getElementById('login-username').value.trim();
+  const password=document.getElementById('login-password').value;
+  if(!username || !password){showError('login-error','Please enter username and password');return;}
+
+  if(!db){showError('login-error','System not configured. Contact admin.');return;}
+
+  const btn=document.getElementById('login-btn');
+  btn.disabled=true; btn.innerHTML='<div class="spinner"></div> Signing in...';
+
+  try{
+    const{data,error}=await db.from('users').select('*').eq('username',username).single();
+    if(error || !data){
+      showError('login-error','Invalid username or password');
+      resetLoginBtn();return;
+    }
+    if(!data.active){
+      showError('login-error','This account has been deactivated. Contact admin.');
+      resetLoginBtn();return;
+    }
+    if(data.password !== password){
+      showError('login-error','Invalid username or password');
+      resetLoginBtn();return;
+    }
+    // Check expiry
+    if(data.expiry_date){
+      const today=todayIso();
+      if(data.expiry_date < today){
+        showError('login-error','Your account has expired. Please contact admin.');
+        resetLoginBtn();return;
+      }
+    }
+    // Success
+    await db.from('users').update({last_login:new Date().toISOString()}).eq('id',data.id);
+
+    if(data.must_change_pw){
+      pendingUser=data;
+      showScreen('screen-change');
+      resetLoginBtn();
+    } else {
+      sessionStorage.setItem('hk_user', JSON.stringify({username:data.username,id:data.id}));
+      window.location.href='index.html';
+    }
+  }catch(e){
+    console.error(e);
+    showError('login-error','Connection error. Please try again.');
+    resetLoginBtn();
+  }
+}
+function resetLoginBtn(){
+  const btn=document.getElementById('login-btn');
+  btn.disabled=false; btn.innerHTML='<i class="fa-solid fa-right-to-bracket"></i> Sign in';
+}
+
+async function doChangePassword(){
+  clearError('change-error');
+  const pw1=document.getElementById('new-password').value;
+  const pw2=document.getElementById('confirm-password').value;
+  if(pw1.length<6){showError('change-error','Password must be at least 6 characters');return;}
+  if(pw1!==pw2){showError('change-error','Passwords do not match');return;}
+
+  const btn=document.getElementById('change-btn');
+  btn.disabled=true; btn.innerHTML='<div class="spinner"></div> Saving...';
+
+  try{
+    await db.from('users').update({password:pw1, must_change_pw:false}).eq('id',pendingUser.id);
+    sessionStorage.setItem('hk_user', JSON.stringify({username:pendingUser.username,id:pendingUser.id}));
+    window.location.href='index.html';
+  }catch(e){
+    showError('change-error','Failed to update password. Try again.');
+    btn.disabled=false; btn.innerHTML='<i class="fa-solid fa-check"></i> Set password & continue';
+  }
+}
+
+// Allow Enter key to submit
+document.getElementById('login-password').addEventListener('keypress', e=>{if(e.key==='Enter')doLogin();});
+document.getElementById('confirm-password').addEventListener('keypress', e=>{if(e.key==='Enter')doChangePassword();});
+
+// If already logged in, redirect straight to app
+if(sessionStorage.getItem('hk_user')){
+  window.location.href='index.html';
+}
+</script>
+</body>
+</html>
