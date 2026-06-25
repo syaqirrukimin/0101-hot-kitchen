@@ -9,7 +9,6 @@
   const SUPABASE_URL = 'https://hjrenunayzpgidpwwkcl.supabase.co';
   const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhqcmVudW5heXpwZ2lkcHd3a2NsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE3NTQ5MjcsImV4cCI6MjA5NzMzMDkyN30.9zEatcQ9Yl2ciBOluQ5u3oNyEHmQ3cYt6-p14fJEFXM';
 </script>
-</script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
@@ -166,7 +165,7 @@ async function doLogin(){
       showScreen('screen-change');
       resetLoginBtn();
     } else {
-      sessionStorage.setItem('hk_user', JSON.stringify({username:data.username,id:data.id}));
+      sessionStorage.setItem('hk_user', JSON.stringify({username:data.username,id:data.id,stall_id:data.stall_id}));
       window.location.href='index.html';
     }
   }catch(e){
@@ -192,7 +191,7 @@ async function doChangePassword(){
 
   try{
     await db.from('users').update({password:pw1, must_change_pw:false}).eq('id',pendingUser.id);
-    sessionStorage.setItem('hk_user', JSON.stringify({username:pendingUser.username,id:pendingUser.id}));
+    sessionStorage.setItem('hk_user', JSON.stringify({username:pendingUser.username,id:pendingUser.id,stall_id:pendingUser.stall_id}));
     window.location.href='index.html';
   }catch(e){
     showError('change-error','Failed to update password. Try again.');
