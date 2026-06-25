@@ -551,13 +551,21 @@ async function syncAll() {
   try {
     showToast('🔄 Syncing...');
     // Pull orders for THIS stall only
-    const { data: remoteOrders, error } = await db.from('orders').select('*').eq('stall_id', CURRENT_STALL_ID).order('created_at', { ascending: false });
-    if(error) throw error;
-    if(remoteOrders) orders = remoteOrders.map(r => ({ ...r.data, id: r.id, date: r.date }));
+    const { data: remoteOrders, error: ordersErr } = await db.from('orders').select('*').eq('stall_id', CURRENT_STALL_ID).order('created_at', { ascending: false });
+    if(ordersErr) throw ordersErr;
+    orders = (remoteOrders || []).map(r => ({ ...r.data, id: r.id, date: r.date }));
+
     // Pull settings for THIS stall only
-    const { data: remoteSettings } = await db.from('settings').select('*').eq('stall_id', CURRENT_STALL_ID).maybeSingle();
-    if(remoteSettings) S = remoteSettings.data;
-    else { await db.from('settings').upsert({ stall_id: CURRENT_STALL_ID, data: S }); }
+    const { data: remoteSettings, error: settingsErr } = await db.from('settings').select('*').eq('stall_id', CURRENT_STALL_ID).maybeSingle();
+    if(settingsErr) throw settingsErr;
+    if(remoteSettings && remoteSettings.data) {
+      // Found existing settings for this stall — use them, never overwrite
+      S = remoteSettings.data;
+    } else {
+      // Genuinely no settings row yet for this stall (brand new account) — seed defaults once
+      console.warn('No settings row found for stall', CURRENT_STALL_ID, '— seeding defaults');
+      await db.from('settings').upsert({ stall_id: CURRENT_STALL_ID, data: S });
+    }
     if(!S.soldout) S.soldout = [];
     saveLocal();
     renderCurrentScreen();
@@ -572,16 +580,18 @@ async function pushOrder(order) {
   saveLocal();
   if(!db || !CURRENT_STALL_ID) return;
   try {
-    await db.from('orders').upsert({ id: order.id, stall_id: CURRENT_STALL_ID, date: order.date, data: order });
-  } catch(e) { console.error('Push order failed:', e); }
+    const { error } = await db.from('orders').upsert({ id: order.id, stall_id: CURRENT_STALL_ID, date: order.date, data: order });
+    if(error) { console.error('Push order failed:', error); showToast('⚠️ Failed to save order online: ' + error.message); }
+  } catch(e) { console.error('Push order failed:', e); showToast('⚠️ Failed to save order online'); }
 }
 
 async function pushSettings() {
   saveLocal();
   if(!db || !CURRENT_STALL_ID) return;
   try {
-    await db.from('settings').upsert({ stall_id: CURRENT_STALL_ID, data: S });
-  } catch(e) { console.error('Push settings failed:', e); }
+    const { error } = await db.from('settings').upsert({ stall_id: CURRENT_STALL_ID, data: S });
+    if(error) { console.error('Push settings failed:', error); showToast('⚠️ Failed to save settings online: ' + error.message); }
+  } catch(e) { console.error('Push settings failed:', e); showToast('⚠️ Failed to save settings online'); }
 }
 
 async function deleteOrderRemote(id) {
