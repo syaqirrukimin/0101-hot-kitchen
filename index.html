@@ -497,8 +497,16 @@ const isSoldOut = name => (S.soldout || []).includes(name);
 
 function genId(dateKey) {
   const dk = dateKey || todayKey();
-  const n  = orders.filter(o => o.date === dk).length + 1;
-  return `${dk}-${String(n).padStart(3,'0')}`;
+  const now = new Date();
+  // Format: YYYYMMDD-HHMMSSNNN (NNN = milliseconds, 3 digits)
+  // e.g. 20250625-143022847
+  // Guaranteed unique as long as two orders aren't created in the exact same millisecond
+  // (practically impossible for a single stall)
+  const hh  = String(now.getHours()).padStart(2,'0');
+  const mm  = String(now.getMinutes()).padStart(2,'0');
+  const ss  = String(now.getSeconds()).padStart(2,'0');
+  const ms  = String(now.getMilliseconds()).padStart(3,'0');
+  return `${dk}-${hh}${mm}${ss}${ms}`;
 }
 
 function calcTotal(items, discount) {
